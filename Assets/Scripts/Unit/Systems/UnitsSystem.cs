@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Physics;
 
 public class UnitsSystem : SystemBase
 {
@@ -20,6 +21,16 @@ public class UnitsSystem : SystemBase
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
         EndInit_ECB = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
     }
+
+    protected override void OnStartRunning()
+    {
+        /*
+        EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
+        Entity spawner = spawnerQ.GetSingletonEntity();
+        Spawn_PrussianFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_PrussianFusilier>(spawner);
+        */
+    }
+
     protected override void OnUpdate()
     {
         if(Input.GetKeyDown(KeyCode.P))
@@ -42,19 +53,18 @@ public class UnitsSystem : SystemBase
             typeof(RenderBounds),
             typeof(LocalToWorld)
             );
-
             EntityCommandBuffer.ParallelWriter BeginInitecb = BeginInit_ECB.CreateCommandBuffer().AsParallelWriter(); // done at the begining
             EntityCommandBuffer.ParallelWriter EndInitecb = EndInit_ECB.CreateCommandBuffer().AsParallelWriter(); //Done at the end
             Entities
                 .WithAll<RegimentUnassignedTag, CompRegimentClass_Fusilier>()
-                .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize) =>
+                .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in Spawn_PrussianFusilier prefab) =>
                 {
                     if (HasComponent<CompUnitType_PrussianFusilier>(Regiment))
                     {
                         for (int i = 0; i < RegimentSize.Size; i++)
                         {
-                            Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
-                            //Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, UnitPrefab);
+                            //Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
+                            Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.PrusFusilier);
                             BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
                             BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
                             BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
