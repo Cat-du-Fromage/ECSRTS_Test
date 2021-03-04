@@ -7,7 +7,8 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using Unity.Physics;
-
+//only allow the update after regiments are created
+[UpdateAfter(typeof(RegimentsSystem))]
 public class UnitsSystem : SystemBase
 {
     private EntityManager _entityManager;
@@ -15,7 +16,6 @@ public class UnitsSystem : SystemBase
     EndInitializationEntityCommandBufferSystem EndInit_ECB;
     protected override void OnCreate()
     {
-        base.OnCreate();
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
@@ -33,6 +33,7 @@ public class UnitsSystem : SystemBase
 
     protected override void OnUpdate()
     {
+
         if(Input.GetKeyDown(KeyCode.P))
         {
             EntityQuery RenderUnitHolder = GetEntityQuery(typeof(UnitType_PrussianFusilierMeshChanger));
@@ -63,13 +64,18 @@ public class UnitsSystem : SystemBase
                         {
                             //Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
                             Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
-                            //BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
+                            BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
                             BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
                             BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
                             BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
                         }
                         BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
+            BeginInit_ECB.AddJobHandleForProducer(Dependency);
+            EndInit_ECB.AddJobHandleForProducer(Dependency);
+        }
+        else
+        {
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
             EndInit_ECB.AddJobHandleForProducer(Dependency);
         }

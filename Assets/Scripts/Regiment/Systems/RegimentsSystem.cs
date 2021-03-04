@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using Unity.Rendering;
-
+[AlwaysUpdateSystem]
 public class RegimentsSystem : SystemBase
 {
     public enum UnitFusilier
