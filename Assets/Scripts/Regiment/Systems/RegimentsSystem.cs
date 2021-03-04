@@ -9,9 +9,15 @@ using Unity.Rendering;
 
 public class RegimentsSystem : SystemBase
 {
+    public enum UnitFusilier
+    {
+        PrussianFusilier,
+        FrenchFusilier,
+        BritishFusilier
+    };
+
     private EntityManager _entityManager;
     private EntityArchetype _regimentArchetype;
-
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -32,22 +38,35 @@ public class RegimentsSystem : SystemBase
         //Improvement to make:
         //1)register Units for each click
         //2) when press "enter" spawn all 
-        if(Input.GetKeyDown(KeyCode.L))
+        if (Input.GetKeyDown(KeyCode.L))
         {
-            EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
-            Entity spawner = spawnerQ.GetSingletonEntity();
-            Spawn_PrussianFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_PrussianFusilier>(spawner);
+            CreateRegiment(UnitFusilier.PrussianFusilier);
+        }
+        else if (Input.GetKeyDown(KeyCode.K))
+        {
+            CreateRegiment(UnitFusilier.BritishFusilier);
+        }
+    }
 
-            Entity RegFusiPrus = _entityManager.CreateEntity(_regimentArchetype);
-            _entityManager.AddComponent<CompRegimentClass_Fusilier>(RegFusiPrus);
-            _entityManager.SetComponentData(RegFusiPrus, new CompRegimentClass_Fusilier { Size = 10 });//find a way to assign a number to a class Component
-            _entityManager.AddComponent<RegimentUnassignedTag>(RegFusiPrus);
-            _entityManager.AddComponent<CompUnitType_PrussianFusilier>(RegFusiPrus);
-            //add Prefab for Units
-            _entityManager.AddComponent<Spawn_PrussianFusilier>(RegFusiPrus);
-            _entityManager.SetComponentData<Spawn_PrussianFusilier>(RegFusiPrus, new Spawn_PrussianFusilier { PrusFusilier = spawnerPrefab.PrusFusilier, BritishFusilier = spawnerPrefab.BritishFusilier });
+    public void CreateRegiment(UnitFusilier unitType)
+    {
+        EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
+        Entity spawner = spawnerQ.GetSingletonEntity();
+        Spawn_UnitFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_UnitFusilier>(spawner);
 
-            //Debug.Log("la taille de la troupe est : "+_entityManager.GetComponentData<CompRegimentClass_Fusilier>(RegFusiPrus).Size);
+        Entity RegimentFusilier = _entityManager.CreateEntity(_regimentArchetype);
+        _entityManager.AddComponent<CompRegimentClass_Fusilier>(RegimentFusilier);
+        _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier { Size = 10 });//find a way to assign a number to a class Component
+        _entityManager.AddComponent<RegimentUnassignedTag>(RegimentFusilier);
+        if (unitType == UnitFusilier.PrussianFusilier)
+        {
+            _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
+            _entityManager.SetComponentData(RegimentFusilier, new UnitType_Prefab { UnitTypePrefab = spawnerPrefab.UnitPrussianFusilier });
+        }
+        else if (unitType == UnitFusilier.BritishFusilier)
+        {
+            _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
+            _entityManager.SetComponentData(RegimentFusilier, new UnitType_Prefab { UnitTypePrefab = spawnerPrefab.UnitBritishFusilier });
         }
     }
 }

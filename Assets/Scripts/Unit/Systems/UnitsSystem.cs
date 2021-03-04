@@ -57,26 +57,23 @@ public class UnitsSystem : SystemBase
             EntityCommandBuffer.ParallelWriter EndInitecb = EndInit_ECB.CreateCommandBuffer().AsParallelWriter(); //Done at the end
             Entities
                 .WithAll<RegimentUnassignedTag, CompRegimentClass_Fusilier>()
-                .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in Spawn_PrussianFusilier prefab) =>
+                .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
                 {
-                    if (HasComponent<CompUnitType_PrussianFusilier>(Regiment))
-                    {
                         for (int i = 0; i < RegimentSize.Size; i++)
                         {
                             //Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
-                            Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.PrusFusilier);
-                            BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
+                            Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
+                            //BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
                             BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
                             BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
                             BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
                         }
                         BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
-                    }
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
             EndInit_ECB.AddJobHandleForProducer(Dependency);
         }
-
+        /*
         if (Input.GetKeyDown(KeyCode.O))
         {
             EntityQuery RenderUnitHolder = GetEntityQuery(typeof(UnitType_PrussianFusilierMeshChanger));
@@ -94,28 +91,6 @@ public class UnitsSystem : SystemBase
                     _entityManager.SetSharedComponentData<RenderMesh>(Unit, modifiedMesh);
                 }).Run();
         }
-
-        //if (Input.GetKeyDown(KeyCode.O))
-        //{
-            /*
-                EntityQuery regiment = GetEntityQuery(typeof(RegimentTag));
-                Entity reg = regiment.GetSingletonEntity();
-                Entities
-                    .WithStructuralChanges()
-                    .WithoutBurst()
-                    .WithAll<UnitTag>()
-                    .ForEach((Entity child) =>
-                    {
-                        if (!_entityManager.HasComponent(child, typeof(Parent)))
-                        {
-                            _entityManager.AddComponentData(child, new Parent { Value = reg });
-                            _entityManager.AddComponentData(child, new LocalToParent());
-
-                            DynamicBuffer<LinkedEntityGroup> buf = _entityManager.GetBuffer<LinkedEntityGroup>(reg);
-                            buf.Add(child);
-                        }
-                    }).Run();
-            */
-            //}
+        */
     }
 }
