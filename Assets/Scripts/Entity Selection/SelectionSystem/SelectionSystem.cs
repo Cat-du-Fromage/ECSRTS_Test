@@ -110,8 +110,7 @@ public class SelectionSystem : SystemBase
                 if (_entityManager.HasComponent<UnitTag>(_entHit))
                 {
                     //ADD SELECTION COMPONENT
-                    _entityManager.RemoveComponent<SelectedUnitTag>(_entHit); // REMOVE component SELECTIONUNIT; NOTE: Unit with removed component goes in the same chunk
-                    Debug.Log(_entHit);
+                    _entityManager.AddComponent<SelectedUnitTag>(_entHit);
                     //Find the Parent/Regiment Entity of the Unit
                     RegUnit = _entHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_entHit).Value : Entity.Null;
                     _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
@@ -119,25 +118,81 @@ public class SelectionSystem : SystemBase
 
                 if(RegUnit != Entity.Null)
                 {
+                    /*
                     _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
-                    Debug.Log("REGIMENT OF Unit " + RegUnit);
+                    
+                    EntityQuery RegQuery = _entityManager.CreateEntityQuery
+                        (
+                        ComponentType.ReadOnly<RegimentTag>(),
+                        ComponentType.ReadOnly<SelectedUnitTag>()
+                        );
+                    
+                    NativeArray<ArchetypeChunk> chunks = RegQuery.CreateArchetypeChunkArray(Allocator.TempJob);
+                    BufferTypeHandle<Child> child = _entityManager.GetBufferTypeHandle<Child>(true);
+
+                    foreach(var chunk in chunks)
+                    {
+                        BufferAccessor<Child> Childs = chunk.GetBufferAccessor(child);
+                        for(int i = 0; i < Childs.Length; i++)
+                        {
+                            DynamicBuffer<Child> regChild = Childs[i];
+                            for(int j = 0; j < regChild.Length; j++)
+                            {
+                                Entity ent = regChild[j].Value;
+                                //Debug.Log("Unit in Regi " + ent);
+                                if(!HasComponent<SelectedUnitTag>(ent))
+                                {
+                                    Debug.Log("Unit in Regi " + ent);
+                                    //_entityManager.AddComponent<SelectedUnitTag>(ent);
+                                }
+                            }
+                        }
+                    }
+                    chunks.Dispose();
+                    */
+
+                    //Debug.Log("REGIMENT OF Unit " + RegUnit);
+                    /*
                     Entities
                         .WithoutBurst()
                         .WithStructuralChanges()
                         .WithAll<RegimentTag, SelectedUnitTag>()
-                        .ForEach((DynamicBuffer<Entity> child) => 
+                        .ForEach((DynamicBuffer<Child> child) => 
                         {
-
+                            var ChildArray = child.AsNativeArray();
+                            for (int i = 0; i < ChildArray.Length; i++)
+                            {
+                                Entity UnitRegiment = ChildArray[i].Value;
+                                //Debug.Log("Unit in Regi "+ UnitRegiment);
+                                //_entityManager.AddComponent<SelectedUnitTag>(UnitRegiment); // structural change not allow here, why?
+                            }
                         }).Run();
-                    /*
-                    Entities
-                    .WithoutBurst()
-                    
-                    .ForEach((Entity entity) =>
-                    {
-
-                    }).Run();
                     */
+                    #region TEST3
+                    _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
+                    EntityQuery UnitQuery = _entityManager.CreateEntityQuery
+                        (
+                        ComponentType.ReadOnly<RegimentTag>(),
+                        ComponentType.ReadOnly<SelectedUnitTag>()
+                        );
+                    NativeArray<Entity> RegimentSelected = UnitQuery.ToEntityArray(Allocator.TempJob);
+                    Entities
+                        .WithoutBurst()
+                        .WithStructuralChanges()
+                        .WithAll<UnitTag, Parent>()
+                        .ForEach((Entity entity, in Parent Regiment) =>
+                        {
+                            for(int i = 0; i < RegimentSelected.Length; i++)
+                            {
+                                Debug.Log(RegimentSelected[i]);
+                                if (Regiment.Value == RegimentSelected[i])
+                                {
+                                    _entityManager.AddComponent<SelectedUnitTag>(entity);
+                                }
+                            }
+                        }).Run();
+                    RegimentSelected.Dispose();
+                    #endregion TEST3
                 }
                 //find all his regiment and add component to them too
             }

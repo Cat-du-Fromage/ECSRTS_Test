@@ -26,9 +26,11 @@ public class RegimentsSystem : SystemBase
 
     protected override void OnStartRunning()
     {
+        /*
         EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
         Entity spawner = spawnerQ.GetSingletonEntity();
-        Spawn_PrussianFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_PrussianFusilier>(spawner);
+        Spawn_UnitFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_UnitFusilier>(spawner);
+        */
     }
 
     protected override void OnUpdate()

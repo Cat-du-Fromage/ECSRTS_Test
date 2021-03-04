@@ -36,12 +36,14 @@ public class UnitsSystem : SystemBase
 
         if(Input.GetKeyDown(KeyCode.P))
         {
+            /*
             EntityQuery RenderUnitHolder = GetEntityQuery(typeof(UnitType_PrussianFusilierMeshChanger));
             Entity meshHolder = RenderUnitHolder.GetSingletonEntity();
             RenderMesh modifiedMesh;
 
             modifiedMesh.mesh = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MeshPrussFusilier;
             modifiedMesh.material = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MaterialPrussFusilier;
+            */
             //PROBLEME
             //il semblerait le le regiment dans le lambda ne soit qu'une copie temporaire
             //solution 2
@@ -71,11 +73,6 @@ public class UnitsSystem : SystemBase
                         }
                         BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
-            BeginInit_ECB.AddJobHandleForProducer(Dependency);
-            EndInit_ECB.AddJobHandleForProducer(Dependency);
-        }
-        else
-        {
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
             EndInit_ECB.AddJobHandleForProducer(Dependency);
         }
