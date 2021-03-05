@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using Unity.Rendering;
+using Unity.Physics;
 [AlwaysUpdateSystem]
 public class RegimentsSystem : SystemBase
 {
@@ -21,7 +22,7 @@ public class RegimentsSystem : SystemBase
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        _regimentArchetype = _entityManager.CreateArchetype(typeof(RegimentTag),typeof(LocalToWorld),typeof(Translation)/*,typeof(RenderBounds)*/); // set the archetype of a new Regiment
+        _regimentArchetype = _entityManager.CreateArchetype(typeof(RegimentTag),typeof(LocalToWorld),typeof(Translation),typeof(RenderBounds)); // set the archetype of a new Regiment
     }
 
     protected override void OnStartRunning()

@@ -59,19 +59,20 @@ public class UnitsSystem : SystemBase
             EntityCommandBuffer.ParallelWriter BeginInitecb = BeginInit_ECB.CreateCommandBuffer().AsParallelWriter(); // done at the begining
             EntityCommandBuffer.ParallelWriter EndInitecb = EndInit_ECB.CreateCommandBuffer().AsParallelWriter(); //Done at the end
             Entities
+                .WithBurst()
                 .WithAll<RegimentUnassignedTag, CompRegimentClass_Fusilier>()
                 .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
                 {
-                        for (int i = 0; i < RegimentSize.Size; i++)
-                        {
-                            //Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
-                            Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
-                            BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
-                            BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
-                            BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
-                            BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
-                        }
-                        BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
+                    for (int i = 0; i < RegimentSize.Size; i++)
+                    {
+                        //Entity Unit = BeginInitecb.CreateEntity(entityInQueryIndex, archetypeUnits);
+                        Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
+                        BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
+                        BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
+                        BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
+                        BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
+                    }
+                    BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
             EndInit_ECB.AddJobHandleForProducer(Dependency);

@@ -22,7 +22,11 @@ public class SelectionSystem : SystemBase
     private EntityManager _entityManager;
     Entity RegUnit;
 
+    BeginInitializationEntityCommandBufferSystem BeginInit_ECB;
+    EndInitializationEntityCommandBufferSystem EndInit_ECB;
+
     #region RAYCAST ECS
+
     //==========================================================================================================================
     /// <summary>
     /// ECS RAYCAST BASIC Construction
@@ -61,12 +65,15 @@ public class SelectionSystem : SystemBase
         }
 
     }
+    
     //==========================================================================================================================
     #endregion RAYCAST ECS
     // Start is called before the first frame update
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+        EndInit_ECB = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
     }
 
     protected override void OnStartRunning()
@@ -90,7 +97,7 @@ public class SelectionSystem : SystemBase
         if (Input.GetMouseButton(0))
         {
             dragSelect = math.length(startPosition - (float3)Input.mousePosition) > 10 ? true : false;
-
+            
             widthBoxSelect = Input.mousePosition.x - startPosition.x;
             heightBoxSelect = Input.mousePosition.y - startPosition.y;
 
@@ -100,101 +107,30 @@ public class SelectionSystem : SystemBase
 
         if (Input.GetMouseButtonUp(0))
         {
-
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(false); //SelectionBox HIDE
+            RegUnit = Entity.Null;
+            EntityCommandBuffer.ParallelWriter BeginInitecb = BeginInit_ECB.CreateCommandBuffer().AsParallelWriter(); // done at the begining
+            EntityCommandBuffer.ParallelWriter EndInitecb = EndInit_ECB.CreateCommandBuffer().AsParallelWriter(); //Done at the end
             //Simple Click without drag
             if (dragSelect == false)
             {
                 UnityEngine.Ray ray = Camera.main.ScreenPointToRay(startPosition);
-                Entity _entHit = Raycast(ray.origin, ray.direction * 50000f);
-                if (_entityManager.HasComponent<UnitTag>(_entHit))
+                Entity _UnitHit = Raycast(ray.origin, ray.direction * 50000f);
+                if (_entityManager.HasComponent<UnitTag>(_UnitHit))
                 {
-                    //ADD SELECTION COMPONENT
-                    _entityManager.AddComponent<SelectedUnitTag>(_entHit);
-                    //Find the Parent/Regiment Entity of the Unit
-                    RegUnit = _entHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_entHit).Value : Entity.Null;
-                    _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
-                }
-
-                if(RegUnit != Entity.Null)
-                {
-                    /*
-                    _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
-                    
-                    EntityQuery RegQuery = _entityManager.CreateEntityQuery
-                        (
-                        ComponentType.ReadOnly<RegimentTag>(),
-                        ComponentType.ReadOnly<SelectedUnitTag>()
-                        );
-                    
-                    NativeArray<ArchetypeChunk> chunks = RegQuery.CreateArchetypeChunkArray(Allocator.TempJob);
-                    BufferTypeHandle<Child> child = _entityManager.GetBufferTypeHandle<Child>(true);
-
-                    foreach(var chunk in chunks)
+                    if(!Input.GetKey(KeyCode.LeftShift))
                     {
-                        BufferAccessor<Child> Childs = chunk.GetBufferAccessor(child);
-                        for(int i = 0; i < Childs.Length; i++)
-                        {
-                            DynamicBuffer<Child> regChild = Childs[i];
-                            for(int j = 0; j < regChild.Length; j++)
-                            {
-                                Entity ent = regChild[j].Value;
-                                //Debug.Log("Unit in Regi " + ent);
-                                if(!HasComponent<SelectedUnitTag>(ent))
-                                {
-                                    Debug.Log("Unit in Regi " + ent);
-                                    //_entityManager.AddComponent<SelectedUnitTag>(ent);
-                                }
-                            }
-                        }
+                        DeselectALL(BeginInitecb);
+                        BeginInit_ECB.AddJobHandleForProducer(Dependency);
                     }
-                    chunks.Dispose();
-                    */
-
-                    //Debug.Log("REGIMENT OF Unit " + RegUnit);
-                    /*
-                    Entities
-                        .WithoutBurst()
-                        .WithStructuralChanges()
-                        .WithAll<RegimentTag, SelectedUnitTag>()
-                        .ForEach((DynamicBuffer<Child> child) => 
-                        {
-                            var ChildArray = child.AsNativeArray();
-                            for (int i = 0; i < ChildArray.Length; i++)
-                            {
-                                Entity UnitRegiment = ChildArray[i].Value;
-                                //Debug.Log("Unit in Regi "+ UnitRegiment);
-                                //_entityManager.AddComponent<SelectedUnitTag>(UnitRegiment); // structural change not allow here, why?
-                            }
-                        }).Run();
-                    */
-                    #region TEST3
-                    _entityManager.AddComponent<SelectedUnitTag>(RegUnit);
-                    EntityQuery UnitQuery = _entityManager.CreateEntityQuery
-                        (
-                        ComponentType.ReadOnly<RegimentTag>(),
-                        ComponentType.ReadOnly<SelectedUnitTag>()
-                        );
-                    NativeArray<Entity> RegimentSelected = UnitQuery.ToEntityArray(Allocator.TempJob);
-                    Entities
-                        .WithoutBurst()
-                        .WithStructuralChanges()
-                        .WithAll<UnitTag, Parent>()
-                        .ForEach((Entity entity, in Parent Regiment) =>
-                        {
-                            for(int i = 0; i < RegimentSelected.Length; i++)
-                            {
-                                Debug.Log(RegimentSelected[i]);
-                                if (Regiment.Value == RegimentSelected[i])
-                                {
-                                    _entityManager.AddComponent<SelectedUnitTag>(entity);
-                                }
-                            }
-                        }).Run();
-                    RegimentSelected.Dispose();
-                    #endregion TEST3
+                    _entityManager.AddComponent<SelectedUnitTag>(_UnitHit);
+                    RegUnit = _UnitHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_UnitHit).Value : Entity.Null; //Find the Parent/Regiment Entity of the Unit
                 }
-                //find all his regiment and add component to them too
+                else
+                {
+                    DeselectALL(BeginInitecb);
+                    BeginInit_ECB.AddJobHandleForProducer(Dependency);
+                }
             }
             else
             {
@@ -205,7 +141,7 @@ public class SelectionSystem : SystemBase
                 Entities
                     .WithStructuralChanges() // allow to use MainThread structural change , CAREFULL this does not allow BURST COMPILE
                     .WithAll<UnitTag>()//Select Only Entities wit at least this component
-                    .ForEach((Entity entity, ref Translation translation) =>
+                    .ForEach((Entity entity, in Translation translation) =>
                     {
 
                         float3 entityPosition = translation.Value;
@@ -223,8 +159,60 @@ public class SelectionSystem : SystemBase
                 // Tout variable ou methods NON-ECS bloque burst?
             }
 
-
+            if (RegUnit != Entity.Null)
+            {
+                _entityManager.AddComponent<RegimentUnitSelectedTag>(RegUnit);
+                SelectWholeRegiment(BeginInitecb);
+                BeginInit_ECB.AddJobHandleForProducer(Dependency);
+            }
         }
 
     }
+
+    /// <summary>
+    /// Deselect All Unit and Regiment
+    /// </summary>
+    /// <param name="BeginInitecb"></param>
+    #region Deselect ALL
+    public void DeselectALL(EntityCommandBuffer.ParallelWriter ecb)
+    {
+        Entities
+            .WithAny<SelectedUnitTag, RegimentSelectedTag>()
+            .WithBurst()
+            .ForEach((Entity selected, int entityInQueryIndex) =>
+            {
+                if (HasComponent<RegimentSelectedTag>(selected))
+                    ecb.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, selected);
+                else
+                    ecb.RemoveComponent<SelectedUnitTag>(entityInQueryIndex, selected);
+            }).ScheduleParallel();
+    }
+    #endregion Deselect ALL
+
+    /// <summary>
+    /// Select the whole regiment by:
+    /// 1) retrieve Regiment with the "RegimentUnitSelectedTag" meaning that only part of the regiment is currently selected
+    /// 2) Go throught the dynamicBuffer<Child> (array of entity listing all Unit composing the Regiment)
+    /// 3) add component SelectedUnit to all
+    /// </summary>
+    /// <param name="BeginInitecb"></param>
+    #region Select whole regiment
+    public void SelectWholeRegiment(EntityCommandBuffer.ParallelWriter ecb)
+    {
+        Entities
+            .WithBurst()
+            .WithAll<RegimentTag, RegimentUnitSelectedTag>()
+            .WithNone<RegimentSelectedTag>()
+            .ForEach((Entity regimentSelected, int entityInQueryIndex, in DynamicBuffer<Child> unitChild) =>
+            {
+                for (int i = 0; i < unitChild.Length; i++)
+                {
+                    if (!HasComponent<SelectedUnitTag>(unitChild[i].Value))
+                        ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
+                }
+                ecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
+                ecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
+            }).Schedule();
+    }
+    #endregion Select whole regiment
 }

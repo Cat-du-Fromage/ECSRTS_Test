@@ -3,9 +3,9 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 /// <summary>
-/// given when The Unit is selected
+/// given when the whole regiment is selected
 /// </summary>
-public struct SelectedUnitTag : IComponentData
+public struct RegimentSelectedTag : IComponentData
 {
-
+    
 }
