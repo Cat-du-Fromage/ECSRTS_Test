@@ -7,6 +7,7 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using Unity.Physics;
+
 //only allow the update after regiments are created
 [UpdateAfter(typeof(RegimentsSystem))]
 public class UnitsSystem : SystemBase
@@ -14,12 +15,15 @@ public class UnitsSystem : SystemBase
     private EntityManager _entityManager;
     BeginInitializationEntityCommandBufferSystem BeginInit_ECB;
     EndInitializationEntityCommandBufferSystem EndInit_ECB;
+
+    EndSimulationEntityCommandBufferSystem ecsSim;
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
         EndInit_ECB = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
+        ecsSim = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
 
     protected override void OnStartRunning()
@@ -36,14 +40,6 @@ public class UnitsSystem : SystemBase
 
         if(Input.GetKeyDown(KeyCode.P))
         {
-            /*
-            EntityQuery RenderUnitHolder = GetEntityQuery(typeof(UnitType_PrussianFusilierMeshChanger));
-            Entity meshHolder = RenderUnitHolder.GetSingletonEntity();
-            RenderMesh modifiedMesh;
-
-            modifiedMesh.mesh = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MeshPrussFusilier;
-            modifiedMesh.material = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MaterialPrussFusilier;
-            */
             //PROBLEME
             //il semblerait le le regiment dans le lambda ne soit qu'une copie temporaire
             //solution 2
@@ -77,24 +73,5 @@ public class UnitsSystem : SystemBase
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
             EndInit_ECB.AddJobHandleForProducer(Dependency);
         }
-        /*
-        if (Input.GetKeyDown(KeyCode.O))
-        {
-            EntityQuery RenderUnitHolder = GetEntityQuery(typeof(UnitType_PrussianFusilierMeshChanger));
-            Entity meshHolder = RenderUnitHolder.GetSingletonEntity();
-            Entities
-                .WithAll<UnitTag>()
-                .WithStructuralChanges()
-                .WithoutBurst()
-                .ForEach((Entity Unit, in RenderMesh mesh) => 
-                {
-                    RenderMesh modifiedMesh = mesh;
-
-                    modifiedMesh.mesh = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MeshPrussFusilier;
-                    modifiedMesh.material = _entityManager.GetComponentData<UnitType_PrussianFusilierMeshChanger>(meshHolder).MaterialPrussFusilier;
-                    _entityManager.SetSharedComponentData<RenderMesh>(Unit, modifiedMesh);
-                }).Run();
-        }
-        */
     }
 }
