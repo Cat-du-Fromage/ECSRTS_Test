@@ -4,10 +4,11 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+
 /// <summary>
 /// Disable all Unit Selection on creation of Units
 /// </summary>
-//[UpdateInGroup(typeof(SimulationSystemGroup))]
+//[UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(UnitsSystem))]
 public class HighlightSystem : SystemBase
 {
@@ -15,6 +16,7 @@ public class HighlightSystem : SystemBase
 
     protected override void OnCreate()
     {
+        base.OnCreate();
         ECB_bSim = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
     protected override void OnStartRunning()
@@ -24,18 +26,15 @@ public class HighlightSystem : SystemBase
         UnityEngine.Debug.Log("HighlightDnable");
         Entities
             .WithAll<UnitTag>()
-            .WithNone<SelectedUnitTag>()
+            .WithNone<SelectedUnitTag, UnitNoNeedHighlightTag, UnitNeedHighlightTag>()
             .WithBurst()
             //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
             .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<LinkedEntityGroup> linkedEntity) =>
             {
-                UnityEngine.Debug.Log("DPass1");
                 for (int i = 1; i < linkedEntity.Length; i++)
                 {
-                    UnityEngine.Debug.Log("DPass2");
                     if (HasComponent<HighlightTag>(linkedEntity[i].Value))
                     {
-                        UnityEngine.Debug.Log("HighlightDnable Pass3");
                         ecbBsim.AddComponent<Disabled>(entityInQueryIndex, linkedEntity[i].Value);
                     }
                 }
@@ -47,6 +46,12 @@ public class HighlightSystem : SystemBase
     {
 
     }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+    }
 }
+
 
 

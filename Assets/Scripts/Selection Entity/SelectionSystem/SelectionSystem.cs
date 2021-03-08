@@ -9,7 +9,7 @@ using Unity.Jobs;
 using Unity.Physics.Systems;
 using Unity.Physics;
 //Make sur it's always im use
-//[UpdateInGroup(typeof(InitializationSystemGroup))]
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 [AlwaysUpdateSystem]
 public class SelectionSystem : SystemBase
 {
@@ -24,7 +24,7 @@ public class SelectionSystem : SystemBase
     Entity RegUnit;
 
     BeginInitializationEntityCommandBufferSystem BeginInit_ECB;
-    EndInitializationEntityCommandBufferSystem EndInit_ECB;
+    BeginSimulationEntityCommandBufferSystem EndInit_ECB;
 
     #region RAYCAST ECS
 
@@ -72,9 +72,10 @@ public class SelectionSystem : SystemBase
     // Start is called before the first frame update
     protected override void OnCreate()
     {
+        base.OnCreate();
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        EndInit_ECB = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
+        EndInit_ECB = World.GetOrCreateSystem<BeginSimulationEntityCommandBufferSystem>();
     }
 
     protected override void OnStartRunning()
@@ -85,6 +86,7 @@ public class SelectionSystem : SystemBase
         widthBoxSelect = 0f;
         heightBoxSelect = 0f;
     }
+
 
     // Update is called once per frame
     protected override void OnUpdate()
@@ -119,91 +121,29 @@ public class SelectionSystem : SystemBase
                 Entity _UnitHit = Raycast(ray.origin, ray.direction * 50000f);
                 if (_entityManager.HasComponent<UnitTag>(_UnitHit))
                 {
-                //WE HIT SOMETHING
+                    //WE HIT SOMETHING
                     if(!Input.GetKey(KeyCode.LeftShift))
                     {
                         //DeselectALL(BeginInitecb);
-                        Entities
-                            .WithAny<SelectedUnitTag, RegimentSelectedTag>()
-                            .WithBurst()
-                            .ForEach((Entity selected, int entityInQueryIndex) =>
-                            {
-                                if (HasComponent<RegimentSelectedTag>(selected))
-                                    BeginInitecb.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, selected);
-                                else
-                                    BeginInitecb.RemoveComponent<SelectedUnitTag>(entityInQueryIndex, selected);
-                            }).ScheduleParallel();
-                        BeginInit_ECB.AddJobHandleForProducer(Dependency);
+                        HighlightDeselectDisable(EndInitecb);
                     }
                     _entityManager.AddComponent<SelectedUnitTag>(_UnitHit);
                     _entityManager.AddComponent<UnitNeedHighlightTag>(_UnitHit);
                     RegUnit = _UnitHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_UnitHit).Value : Entity.Null; //Find the Parent/Regiment Entity of the Unit
 
                     _entityManager.AddComponent<RegimentUnitSelectedTag>(RegUnit);
-                    Entities
-                    .WithBurst()
-                    .WithAll<RegimentTag, RegimentUnitSelectedTag>()
-                    .WithNone<RegimentSelectedTag>()
-                    .ForEach((Entity regimentSelected, int entityInQueryIndex, in DynamicBuffer<Child> unitChild) =>
-                    {
-                        for (int i = 0; i < unitChild.Length; i++)
-                        {
-                            if (!HasComponent<SelectedUnitTag>(unitChild[i].Value))
-                            {
-                                BeginInitecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
-                                BeginInitecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
-                                UnityEngine.Debug.Log("REGIMENTUNIT PASS");
-                            }
-                        }
-                        BeginInitecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
-                        BeginInitecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
-                    }).Schedule();
-                    BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
+                    SelectWholeRegiment(BeginInitecb);
+
+
+                    //HighlightSelectEnable(EndInitecb);
+                    //World.GetOrCreateSystem<EnableHighlight>().Update();
                 }
                 else
                 {
                     // NO TARGET
                     //DeselectALL(BeginInitecb);
-                    //REMOVE SELECT COMPONENT
-                    Entities
-                            .WithAny<SelectedUnitTag, RegimentSelectedTag>()
-                            .WithBurst()
-                            .ForEach((Entity selected, int entityInQueryIndex) =>
-                            {
-                                if (HasComponent<RegimentSelectedTag>(selected))
-                                {
-                                    BeginInitecb.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, selected);
-                                }
-                                else
-                                {
-                                    BeginInitecb.RemoveComponent<SelectedUnitTag>(entityInQueryIndex, selected);
-                                    BeginInitecb.AddComponent<UnitNoNeedHighlightTag>(entityInQueryIndex, selected);
-                                }
-                            }).ScheduleParallel();
-                    BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
-                    //REMOVE HIGHLIGHT
-                    Entities
-                        .WithAll<UnitTag, UnitNoNeedHighlightTag>()
-                        .WithNone<SelectedUnitTag>()
-                        .WithBurst()
-                        //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
-                        .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<LinkedEntityGroup> linkedEntity) =>
-                        {
-                            UnityEngine.Debug.Log("DPass1");
-                            for (int i = 1; i < linkedEntity.Length; i++)
-                            {
-                                UnityEngine.Debug.Log("DPass2");
-                                if (HasComponent<HighlightTag>(linkedEntity[i].Value))
-                                {
-                                    UnityEngine.Debug.Log("HighlightDnable Pass3");
-                                    BeginInitecb.AddComponent<Disabled>(entityInQueryIndex, linkedEntity[i].Value);
-                                }
-                            }
-                            BeginInitecb.RemoveComponent<UnitNoNeedHighlightTag>(entityInQueryIndex, UnitSelected);
-                        }).Schedule();
-                    BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
+                    HighlightDeselectDisable(EndInitecb);
                 }
-                //BeginInit_ECB.AddJobHandleForProducer(Dependency);
             }
             else
             {
@@ -215,7 +155,6 @@ public class SelectionSystem : SystemBase
                     .WithAll<UnitTag>()//Select Only Entities wit at least this component
                     .ForEach((Entity entity, in Translation translation) =>
                     {
-
                         float3 entityPosition = translation.Value;
                         float3 screenPos = Camera.main.WorldToScreenPoint(entityPosition);
                         if ( (screenPos.x >= lowerLeftPosition.x) && (screenPos.y >= lowerLeftPosition.y) && (screenPos.x <= upperRightPosition.x) && (screenPos.y <= upperRightPosition.y) )
@@ -224,64 +163,12 @@ public class SelectionSystem : SystemBase
                             _entityManager.AddComponent<UnitNeedHighlightTag>(entity);
                             Debug.Log(entity);
                         }
-
                     })
                     .WithoutBurst()
                     .Run();
-                //.ScheduleParallel(); ATTENTION pas de burst ici , car Camera.main n'est pas une fonction ECS
-                // Tout variable ou methods NON-ECS bloque burst?
-            }
 
-            if (RegUnit != Entity.Null)
-            {
-                /*
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(RegUnit);
-                //SelectWholeRegiment(BeginInitecb);
-                Entities
-                    .WithBurst()
-                    .WithAll<RegimentTag, RegimentUnitSelectedTag>()
-                    .WithNone<RegimentSelectedTag>()
-                    .ForEach((Entity regimentSelected, int entityInQueryIndex, in DynamicBuffer<Child> unitChild) =>
-                    {
-                        for (int i = 0; i < unitChild.Length; i++)
-                        {
-                            if (!HasComponent<SelectedUnitTag>(unitChild[i].Value))
-                            {
-                                BeginInitecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
-                                BeginInitecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
-                                UnityEngine.Debug.Log("REGIMENTUNIT PASS");
-                            }
-                        }
-                        BeginInitecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
-                        BeginInitecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
-                    }).ScheduleParallel();
-                BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
-                */
-                Entities
-                    .WithAll<SelectedUnitTag, UnitNeedHighlightTag>()
-                    .WithBurst()
-                    .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> linkedEntity) =>
-                    {
-                        UnityEngine.Debug.Log("Pass1");
-                        for (int i = 0; i < linkedEntity.Length; i++)
-                        {
-                            UnityEngine.Debug.Log("Pass2");
-                            if (HasComponent<HighlightTag>(linkedEntity[i].Value))
-                            {
-                                UnityEngine.Debug.Log("HighlightEnable Pass3");
-                                BeginInitecb.RemoveComponent<Disabled>(entityInQueryIndex, linkedEntity[i].Value);
-                            }
-                            else
-                            {
-                                UnityEngine.Debug.Log("Something goes wrong");
-                            }
-                        }
-                        BeginInitecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
-                    }).Schedule();
-                EndInit_ECB.AddJobHandleForProducer(this.Dependency);
+                HighlightSelectEnable(EndInitecb);
             }
-            BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
-            EndInit_ECB.AddJobHandleForProducer(this.Dependency);
         }
 
     }
@@ -299,10 +186,18 @@ public class SelectionSystem : SystemBase
             .ForEach((Entity selected, int entityInQueryIndex) =>
             {
                 if (HasComponent<RegimentSelectedTag>(selected))
+                {
                     ecb.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, selected);
+                    Debug.Log("REmove SelectRegimentTag");
+                }
                 else
+                {
                     ecb.RemoveComponent<SelectedUnitTag>(entityInQueryIndex, selected);
+                    ecb.AddComponent<UnitNoNeedHighlightTag>(entityInQueryIndex, selected);
+                    Debug.Log("REmove SelectUnitTag");
+                }
             }).ScheduleParallel();
+        //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
     }
     #endregion Deselect ALL
 
@@ -328,20 +223,21 @@ public class SelectionSystem : SystemBase
                     {
                         ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
                         ecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
+                        UnityEngine.Debug.Log("REGIMENTUNIT PASS");
                     }
                 }
                 ecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
                 ecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
-            }).WithName("RegimentSelected")
-            .Schedule();
+            }).ScheduleParallel();
+        BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
     }
     #endregion Select whole regiment
     /// <summary>
     /// PROBLEME ICI
     /// </summary>
     /// <param name="ecb"></param>
-    /*
-    #region Highlight
+    
+    #region Highlight Enable
     public void HighlightEnable(EntityCommandBuffer.ParallelWriter ecb)
     {
         Debug.Log("HighlightEnable");
@@ -364,7 +260,144 @@ public class SelectionSystem : SystemBase
                 //ecb.RemoveComponent<Disabled>(entityInQueryIndex, linkedEntity[1].Value);
                 ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
             }).Schedule();
+        //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
     }
-    #endregion Highlight
-    */
+    #endregion Highlight Enable
+
+
+    #region Select and Highlight Enable
+    public void HighlightSelectEnable(EntityCommandBuffer.ParallelWriter ecb)
+    {
+        Debug.Log("HighlightSelectEnable Enter");
+        JobHandle RegimentSelectWhole =
+            Entities
+                .WithName("Regimentwholeselect")
+                .WithBurst()
+                .WithAll<RegimentTag, RegimentUnitSelectedTag>()
+                .WithNone<RegimentSelectedTag>()
+                .ForEach((Entity regimentSelected, int entityInQueryIndex, in DynamicBuffer<Child> unitChild) =>
+                {
+                    for (int i = 0; i < unitChild.Length; i++)
+                    {
+                        if (!HasComponent<SelectedUnitTag>(unitChild[i].Value))
+                        {
+                            ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
+                            ecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
+                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED");
+                        }
+                        else
+                        {
+                            Debug.Log("HighlightSelectEnable false");
+                        }
+                    }
+                    ecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
+                    ecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
+                    
+                }).Schedule(this.Dependency);
+        BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
+        //EndInit_ECB.AddJobHandleForProducer(Dependency);
+        Debug.Log("HighlightSelectEnable Enter2");
+        EntityQuery querytest = _entityManager.CreateEntityQuery(ComponentType.ReadOnly<UnitNeedHighlightTag>());
+        Debug.Log(querytest.CalculateEntityCount());
+            JobHandle EnableHighlight =
+               Entities
+                   .WithName("showHighlight")
+                   .WithBurst()
+                   .WithAll<UnitTag, UnitNeedHighlightTag>()
+                   //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
+                   .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> child) =>
+                   {
+                       Debug.Log("HighlightSelectEnable UnitSelected");
+                       for (int i = 0; i < child.Length; i++)
+                       {
+                           if (HasComponent<HighlightTag>(child[0].Value))
+                           {
+                               Debug.Log("HighlightSelectEnable UnitSelected PASS");
+                               ecb.RemoveComponent<Disabled>(entityInQueryIndex, child[i].Value);
+                           }
+                           ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
+                       }
+                    //ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
+                }).Schedule(RegimentSelectWhole);
+            //BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
+            EndInit_ECB.AddJobHandleForProducer(EnableHighlight);
+            EnableHighlight.Complete();
+
+        /*
+        JobHandle EnableHighlight =
+            Entities
+                .WithName("showHighlight")
+                .WithBurst()
+                .WithAll<UnitTag, UnitNeedHighlightTag>()
+                //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
+                .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> child) =>
+                {
+                        Debug.Log("HighlightSelectEnable UnitSelected");
+                        for (int i = 0; i < child.Length; i++)
+                        {
+                            if (HasComponent<HighlightTag>(child[0].Value))
+                            {
+                                Debug.Log("HighlightSelectEnable UnitSelected PASS");
+                                ecb.RemoveComponent<Disabled>(entityInQueryIndex, child[i].Value);
+                            }
+                        ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
+                        }
+                    //ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
+                }).Schedule(RegimentSelectWhole);
+                //BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
+                EndInit_ECB.AddJobHandleForProducer(EnableHighlight);
+                EnableHighlight.Complete();
+        */
+    }
+    #endregion Select and Highlight Enable
+
+
+    #region Deselect and Highlight Disable
+    public void HighlightDeselectDisable(EntityCommandBuffer.ParallelWriter ecb)
+    {
+        JobHandle Deselect =
+            Entities
+                .WithAny<SelectedUnitTag, RegimentSelectedTag>()
+                .WithBurst()
+                .ForEach((Entity selected, int entityInQueryIndex) =>
+                {
+                    if (HasComponent<RegimentSelectedTag>(selected))
+                    {
+                        ecb.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, selected);
+                    }
+                    else
+                    {
+                        ecb.RemoveComponent<SelectedUnitTag>(entityInQueryIndex, selected);
+                        ecb.AddComponent<UnitNoNeedHighlightTag>(entityInQueryIndex, selected);
+                    }
+                }).ScheduleParallel(Dependency);
+        //Dependency.Complete();
+        //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
+        //EndInit_ECB.AddJobHandleForProducer(this.Dependency);
+
+        JobHandle HideHighlight =
+            Entities
+               .WithName("HideHighlight")
+               .WithBurst()
+               .WithAll<UnitNoNeedHighlightTag, UnitTag>()
+               .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> child) =>
+               {
+                   for (int i = 0; i < child.Length; i++)
+                   {
+                        if (HasComponent<HighlightTag>(child[i].Value))
+                        {
+                            ecb.AddComponent<Disabled>(entityInQueryIndex, child[i].Value);
+                        }
+                   }
+
+                   //ecb.RemoveComponent<Disabled>(entityInQueryIndex, linkedEntity[1].Value);
+                   ecb.RemoveComponent<UnitNoNeedHighlightTag>(entityInQueryIndex, UnitSelected);
+               }).Schedule(Deselect);
+            //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
+            EndInit_ECB.AddJobHandleForProducer(Deselect);
+            //this.Dependency = HideHighlight;
+            HideHighlight.Complete();
+    }
+    #endregion Deselect and Highlight Disable
+
 }
