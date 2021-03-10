@@ -7,7 +7,9 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Rendering;
 using Unity.Physics;
-[AlwaysUpdateSystem]
+//[AlwaysUpdateSystem]
+[UpdateAfter(typeof(SelectionSystem))]
+//[UpdateInGroup(typeof(SelectionSystem))]
 public class RegimentsSystem : SystemBase
 {
     public enum UnitFusilier

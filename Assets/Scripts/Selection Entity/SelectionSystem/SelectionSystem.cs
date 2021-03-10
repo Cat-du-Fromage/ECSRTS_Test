@@ -9,7 +9,8 @@ using Unity.Jobs;
 using Unity.Physics.Systems;
 using Unity.Physics;
 //Make sur it's always im use
-[UpdateInGroup(typeof(InitializationSystemGroup))]
+[UpdateInGroup(typeof(SimulationSystemGroup),OrderFirst = true)]
+[UpdateBefore(typeof(BeginSimulationEntityCommandBufferSystem))]
 [AlwaysUpdateSystem]
 public class SelectionSystem : SystemBase
 {
@@ -127,8 +128,8 @@ public class SelectionSystem : SystemBase
                         //DeselectALL(BeginInitecb);
                         HighlightDeselectDisable(EndInitecb);
                     }
-                    _entityManager.AddComponent<SelectedUnitTag>(_UnitHit);
-                    _entityManager.AddComponent<UnitNeedHighlightTag>(_UnitHit);
+                    //_entityManager.AddComponent<SelectedUnitTag>(_UnitHit);
+                    //_entityManager.AddComponent<UnitNeedHighlightTag>(_UnitHit);
                     RegUnit = _UnitHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_UnitHit).Value : Entity.Null; //Find the Parent/Regiment Entity of the Unit
 
                     _entityManager.AddComponent<RegimentUnitSelectedTag>(RegUnit);
@@ -136,7 +137,6 @@ public class SelectionSystem : SystemBase
 
 
                     //HighlightSelectEnable(EndInitecb);
-                    //World.GetOrCreateSystem<EnableHighlight>().Update();
                 }
                 else
                 {
@@ -282,8 +282,9 @@ public class SelectionSystem : SystemBase
                         if (!HasComponent<SelectedUnitTag>(unitChild[i].Value))
                         {
                             ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
+                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED SELECT");
                             ecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
-                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED");
+                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED HIGHLIGHT");
                         }
                         else
                         {
@@ -293,18 +294,21 @@ public class SelectionSystem : SystemBase
                     ecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
                     ecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
                     
-                }).Schedule(this.Dependency);
-        BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
+                }).ScheduleParallel(this.Dependency);
+        RegimentSelectWhole.Complete();
+        //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
+
+
         //EndInit_ECB.AddJobHandleForProducer(Dependency);
         Debug.Log("HighlightSelectEnable Enter2");
-        EntityQuery querytest = _entityManager.CreateEntityQuery(ComponentType.ReadOnly<UnitNeedHighlightTag>());
+        EntityQuery querytest = _entityManager.CreateEntityQuery(typeof(UnitNeedHighlightTag));
         Debug.Log(querytest.CalculateEntityCount());
             JobHandle EnableHighlight =
                Entities
                    .WithName("showHighlight")
                    .WithBurst()
-                   .WithAll<UnitTag, UnitNeedHighlightTag>()
-                   //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
+                   .WithAll<SelectedUnitTag, UnitNeedHighlightTag>()
+                   .WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
                    .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> child) =>
                    {
                        Debug.Log("HighlightSelectEnable UnitSelected");
@@ -319,8 +323,7 @@ public class SelectionSystem : SystemBase
                        }
                     //ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
                 }).Schedule(RegimentSelectWhole);
-            //BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
-            EndInit_ECB.AddJobHandleForProducer(EnableHighlight);
+        BeginInit_ECB.AddJobHandleForProducer(EnableHighlight);
             EnableHighlight.Complete();
 
         /*

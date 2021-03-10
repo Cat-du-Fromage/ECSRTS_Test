@@ -4,9 +4,8 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
-//[UpdateInGroup(typeof(InitializationSystemGroup))]
-[UpdateAfter(typeof(SelectionSystem))]
 public class EnableHighlight : SystemBase
 {
     BeginInitializationEntityCommandBufferSystem ECB_bSim;
@@ -14,12 +13,14 @@ public class EnableHighlight : SystemBase
     protected override void OnCreate()
     {
         ECB_bSim = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+        RequireSingletonForUpdate<UnitNeedHighlightTag>();
+        Debug.Log("Enable Highlight ENTER");
     }
 
     protected override void OnUpdate()
     {
         EntityCommandBuffer.ParallelWriter ecbBsim = ECB_bSim.CreateCommandBuffer().AsParallelWriter();
-        //UnityEngine.Debug.Log("HighlightEnable");
+        UnityEngine.Debug.Log("HighlightEnable");
         Entities
             .WithAll<SelectedUnitTag, UnitNeedHighlightTag, UnitTag>()
             .WithBurst()
@@ -39,8 +40,12 @@ public class EnableHighlight : SystemBase
             }).ScheduleParallel();
         ECB_bSim.AddJobHandleForProducer(this.Dependency);
     }
+
+    protected override void OnStopRunning()
+    {
+        base.OnStopRunning();
+        Debug.Log("Enable Highlight EXIT");
+    }
 }
-
-
 
 
