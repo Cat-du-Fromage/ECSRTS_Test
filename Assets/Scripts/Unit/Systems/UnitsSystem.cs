@@ -14,25 +14,12 @@ public class UnitsSystem : SystemBase
 {
     private EntityManager _entityManager;
     BeginInitializationEntityCommandBufferSystem BeginInit_ECB;
-    EndInitializationEntityCommandBufferSystem EndInit_ECB;
 
-    EndSimulationEntityCommandBufferSystem ecsSim;
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        EndInit_ECB = World.GetOrCreateSystem<EndInitializationEntityCommandBufferSystem>();
-        ecsSim = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-    }
-
-    protected override void OnStartRunning()
-    {
-        /*
-        EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
-        Entity spawner = spawnerQ.GetSingletonEntity();
-        Spawn_PrussianFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_PrussianFusilier>(spawner);
-        */
     }
 
     protected override void OnUpdate()
@@ -45,6 +32,7 @@ public class UnitsSystem : SystemBase
             //solution 2
             //stocker l'id de la copie dans les unités puis les réassigner dans une autre boucle
             // RESOLVE! ne regiment lack : LocalToWorld
+            /*
             EntityArchetype archetypeUnits = _entityManager.CreateArchetype(
             typeof(Translation),
             typeof(Rotation),
@@ -52,8 +40,8 @@ public class UnitsSystem : SystemBase
             typeof(RenderBounds),
             typeof(LocalToWorld)
             );
+            */
             EntityCommandBuffer.ParallelWriter BeginInitecb = BeginInit_ECB.CreateCommandBuffer().AsParallelWriter(); // done at the begining
-            EntityCommandBuffer.ParallelWriter EndInitecb = EndInit_ECB.CreateCommandBuffer().AsParallelWriter(); //Done at the end
             Entities
                 .WithBurst()
                 .WithAll<RegimentUnassignedTag, CompRegimentClass_Fusilier>()
@@ -71,7 +59,7 @@ public class UnitsSystem : SystemBase
                     BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
             BeginInit_ECB.AddJobHandleForProducer(Dependency);
-            EndInit_ECB.AddJobHandleForProducer(Dependency);
+
         }
     }
 }

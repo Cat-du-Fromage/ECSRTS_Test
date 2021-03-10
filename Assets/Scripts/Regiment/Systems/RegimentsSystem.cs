@@ -27,15 +27,6 @@ public class RegimentsSystem : SystemBase
         _regimentArchetype = _entityManager.CreateArchetype(typeof(RegimentTag),typeof(LocalToWorld),typeof(Translation),typeof(RenderBounds)); // set the archetype of a new Regiment
     }
 
-    protected override void OnStartRunning()
-    {
-        /*
-        EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
-        Entity spawner = spawnerQ.GetSingletonEntity();
-        Spawn_UnitFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_UnitFusilier>(spawner);
-        */
-    }
-
     protected override void OnUpdate()
     {
         //Simulation of the spawning of regiment(like in total war)

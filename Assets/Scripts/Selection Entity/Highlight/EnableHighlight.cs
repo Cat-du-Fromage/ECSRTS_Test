@@ -9,12 +9,13 @@ using UnityEngine;
 public class EnableHighlight : SystemBase
 {
     BeginInitializationEntityCommandBufferSystem ECB_bSim;
-
+    private EntityQuery _test;
     protected override void OnCreate()
     {
         ECB_bSim = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        RequireSingletonForUpdate<UnitNeedHighlightTag>();
+        //RequireSingletonForUpdate<UnitNeedHighlightTag>();
         Debug.Log("Enable Highlight ENTER");
+        this._test = GetEntityQuery(typeof(UnitNeedHighlightTag)); //if the entity query is empty, the system won't update
     }
 
     protected override void OnUpdate()

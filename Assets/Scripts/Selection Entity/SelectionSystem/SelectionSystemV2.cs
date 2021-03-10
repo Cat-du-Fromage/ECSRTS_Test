@@ -20,6 +20,7 @@ public class SelectionSystemV2 : SystemBase
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         base.OnCreate();
+
     }
 
     protected override void OnStartRunning()
