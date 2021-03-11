@@ -8,6 +8,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Physics.Systems;
 using Unity.Physics;
+/*
 //Make sur it's always im use
 [UpdateInGroup(typeof(SimulationSystemGroup),OrderFirst = true)]
 [UpdateBefore(typeof(BeginSimulationEntityCommandBufferSystem))]
@@ -325,32 +326,6 @@ public class SelectionSystem : SystemBase
                 }).Schedule(RegimentSelectWhole);
         BeginInit_ECB.AddJobHandleForProducer(EnableHighlight);
             EnableHighlight.Complete();
-
-        /*
-        JobHandle EnableHighlight =
-            Entities
-                .WithName("showHighlight")
-                .WithBurst()
-                .WithAll<UnitTag, UnitNeedHighlightTag>()
-                //.WithEntityQueryOptions(EntityQueryOptions.IncludeDisabled)
-                .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<Child> child) =>
-                {
-                        Debug.Log("HighlightSelectEnable UnitSelected");
-                        for (int i = 0; i < child.Length; i++)
-                        {
-                            if (HasComponent<HighlightTag>(child[0].Value))
-                            {
-                                Debug.Log("HighlightSelectEnable UnitSelected PASS");
-                                ecb.RemoveComponent<Disabled>(entityInQueryIndex, child[i].Value);
-                            }
-                        ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
-                        }
-                    //ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
-                }).Schedule(RegimentSelectWhole);
-                //BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
-                EndInit_ECB.AddJobHandleForProducer(EnableHighlight);
-                EnableHighlight.Complete();
-        */
     }
     #endregion Select and Highlight Enable
 
@@ -404,3 +379,4 @@ public class SelectionSystem : SystemBase
     #endregion Deselect and Highlight Disable
 
 }
+*/

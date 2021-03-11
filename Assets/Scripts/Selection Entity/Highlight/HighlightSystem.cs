@@ -25,6 +25,7 @@ public class HighlightSystem : SystemBase
 
         UnityEngine.Debug.Log("HighlightDnable");
         Entities
+            .WithName("HIGHLIGHTDISABLE")
             .WithAll<UnitTag>()
             .WithNone<SelectedUnitTag, UnitNoNeedHighlightTag, UnitNeedHighlightTag>()
             .WithBurst()

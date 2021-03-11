@@ -8,7 +8,7 @@ using UnityEngine;
 using Unity.Rendering;
 using Unity.Physics;
 //[AlwaysUpdateSystem]
-[UpdateAfter(typeof(SelectionSystem))]
+//[UpdateAfter(typeof(SelectionSystem))]
 //[UpdateInGroup(typeof(SelectionSystem))]
 public class RegimentsSystem : SystemBase
 {

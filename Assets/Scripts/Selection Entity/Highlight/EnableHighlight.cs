@@ -24,6 +24,7 @@ public class EnableHighlight : SystemBase
         UnityEngine.Debug.Log("HighlightEnable");
         Entities
             .WithAll<SelectedUnitTag, UnitNeedHighlightTag, UnitTag>()
+            .WithName("HIGHLIGHTenable")
             .WithBurst()
             .ForEach((Entity UnitSelected, int entityInQueryIndex, in DynamicBuffer<LinkedEntityGroup> linkedEntity) =>
             {
