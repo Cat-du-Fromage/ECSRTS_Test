@@ -5,6 +5,10 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Physics;
+using Unity.Physics.Systems;
+
+
 [AlwaysUpdateSystem]
 public class SelectionSystemV2 : SystemBase
 {
@@ -18,11 +22,63 @@ public class SelectionSystemV2 : SystemBase
     private float _widthBoxSelect;
     private float _heightBoxSelect;
 
+    private float _selectionBoxMinSize;
+    private float3 _lowerLeftPosition;
+    private float3 _upperRightPosition;
+
     private EntityManager _entityManager;
+
+
+    #region RAYCAST ECS
+
+    //==========================================================================================================================
+    /// <summary>
+    /// ECS RAYCAST BASIC Construction
+    /// </summary>
+    /// <param name="fromPosition"></param>
+    /// <param name="toPosition"></param>
+    /// <returns></returns>
+    private Entity Raycast(float3 fromPosition, float3 toPosition, uint collisionFilter)
+    {
+        BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
+        CollisionWorld collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld;//Seems to connect methods uses for collision to the physics world we created
+
+        RaycastInput raycastInput = new RaycastInput
+        {
+            Start = fromPosition,
+            End = toPosition,
+            //Layer filter
+            Filter = new CollisionFilter
+            {
+                BelongsTo = ~0u, //belongs to all layers
+                CollidesWith = collisionFilter, //collides with all layers
+                GroupIndex = 0,
+            }
+        };
+        Debug.Log("raycastInput " + raycastInput.Filter.CollidesWith);
+        //throw a raycast
+        Unity.Physics.RaycastHit raycastHit = new Unity.Physics.RaycastHit();
+        if (collisionWorld.CastRay(raycastInput, out raycastHit))
+        {
+            //Return the entity hit
+            Entity hitEntity = buildPhysicsWorld.PhysicsWorld.Bodies[raycastHit.RigidBodyIndex].Entity;
+            return hitEntity;
+        }
+        else
+        {
+            return Entity.Null;
+        }
+
+    }
+
+    //==========================================================================================================================
+    #endregion RAYCAST ECS
+
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         base.OnCreate();
+        _selectionBoxMinSize = 10f; // careful of the radius or we ended selecting 2 unit at a time
     }
 
     protected override void OnStartRunning()
@@ -39,6 +95,48 @@ public class SelectionSystemV2 : SystemBase
             //GET the mouse Start Position
             _startPosition = Input.mousePosition;
 
+            float3 BoxPositionNoZ = new float3(_startPosition.x, _startPosition.y, 0);
+            _lowerLeftPosition = BoxPositionNoZ + new float3(-1, -1, 0) * _selectionBoxMinSize * 0.5f;
+            Debug.Log(_lowerLeftPosition);
+            _upperRightPosition = BoxPositionNoZ + new float3(1, 1, 0) * _selectionBoxMinSize * 0.5f;
+            Debug.Log(_upperRightPosition);
+            UnityEngine.Ray ray = Camera.main.ScreenPointToRay(_startPosition);
+
+            var filter = new CollisionFilter
+            {
+                CollidesWith = 2u
+            };
+            Entity _UnitHit = Raycast(ray.origin, ray.direction * 50000f, 2u);
+            if(_UnitHit != Entity.Null)
+            {
+                BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
+                Debug.Log("FILTER WORKS" + " " + filter.CollidesWith.ToString() + " " + _UnitHit);
+            }
+            else
+            {
+                Debug.Log("FILTER DONT WORKS" + " " + filter.CollidesWith + " " + _UnitHit);
+            }
+
+            /*
+            Entities
+            .WithName("OnClickSelected")
+            .WithStructuralChanges() // allow to use MainThread structural change , CAREFULL this does not allow BURST COMPILE
+            .WithAll<UnitTag>()//Select Only Entities wit at least this component
+            .WithNone<SelectedUnitTag>()
+            .ForEach((Entity entity, in Translation translation) =>
+            {
+                float3 entityPosition = translation.Value;
+                float3 screenPos = Camera.main.WorldToScreenPoint(entityPosition);
+                if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
+                {
+                    _entityManager.AddComponent<SelectedUnitTag>(entity); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
+                    _entityManager.AddComponent<UnitNeedHighlightTag>(entity);
+                    Debug.Log(entity);
+                }
+            })
+            .WithoutBurst()
+            .Run();
+            */
         }
         #endregion Left Click Down
 
@@ -75,8 +173,8 @@ public class SelectionSystemV2 : SystemBase
     private void template()
     {
         _endPosition = Input.mousePosition;
-        float3 lowerLeftPosition = new float3(math.min(_startPosition.x, _endPosition.x), math.min(_startPosition.y, _endPosition.y), 0);
-        float3 upperRightPosition = new float3(math.max(_startPosition.x, _endPosition.x), math.max(_startPosition.y, _endPosition.y), 0);
+        _lowerLeftPosition = new float3(math.min(_startPosition.x, _endPosition.x), math.min(_startPosition.y, _endPosition.y), 0);
+        _upperRightPosition = new float3(math.max(_startPosition.x, _endPosition.x), math.max(_startPosition.y, _endPosition.y), 0);
         Entities
             .WithStructuralChanges() // allow to use MainThread structural change , CAREFULL this does not allow BURST COMPILE
             .WithAll<UnitTag>()//Select Only Entities wit at least this component
@@ -84,7 +182,7 @@ public class SelectionSystemV2 : SystemBase
             {
                 float3 entityPosition = translation.Value;
                 float3 screenPos = Camera.main.WorldToScreenPoint(entityPosition);
-                if ((screenPos.x >= lowerLeftPosition.x) && (screenPos.y >= lowerLeftPosition.y) && (screenPos.x <= upperRightPosition.x) && (screenPos.y <= upperRightPosition.y))
+                if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
                 {
                     _entityManager.AddComponent<SelectedUnitTag>(entity); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
                             _entityManager.AddComponent<UnitNeedHighlightTag>(entity);
