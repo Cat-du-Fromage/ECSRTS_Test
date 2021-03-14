@@ -134,16 +134,16 @@ public class SelectionSystem : SystemBase
                     RegUnit = _UnitHit != Entity.Null ? _entityManager.GetComponentData<Parent>(_UnitHit).Value : Entity.Null; //Find the Parent/Regiment Entity of the Unit
 
                     _entityManager.AddComponent<RegimentUnitSelectedTag>(RegUnit);
-                    SelectWholeRegiment(BeginInitecb);
+                    //SelectWholeRegiment(BeginInitecb);
 
 
-                    //HighlightSelectEnable(EndInitecb);
+                    HighlightSelectEnable(BeginInitecb);
                 }
                 else
                 {
                     // NO TARGET
                     //DeselectALL(BeginInitecb);
-                    HighlightDeselectDisable(EndInitecb);
+                    HighlightDeselectDisable(BeginInitecb);
                 }
             }
             else
@@ -269,7 +269,7 @@ public class SelectionSystem : SystemBase
     #region Select and Highlight Enable
     public void HighlightSelectEnable(EntityCommandBuffer.ParallelWriter ecb)
     {
-        Debug.Log("HighlightSelectEnable Enter");
+        Dependency.Complete();
         JobHandle RegimentSelectWhole =
             Entities
                 .WithName("Regimentwholeselect")
@@ -285,7 +285,7 @@ public class SelectionSystem : SystemBase
                             ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unitChild[i].Value);
                             Debug.Log("HighlightSelectEnable REGIMENTSELECTED SELECT");
                             ecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unitChild[i].Value);
-                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED HIGHLIGHT");
+                            Debug.Log("HighlightSelectEnable REGIMENTSELECTED UNIT NEED HIGHLIGHT");
                         }
                         else
                         {
@@ -295,15 +295,9 @@ public class SelectionSystem : SystemBase
                     ecb.AddComponent<RegimentSelectedTag>(entityInQueryIndex, regimentSelected);
                     ecb.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, regimentSelected);
                     
-                }).ScheduleParallel(this.Dependency);
+                }).ScheduleParallel(Dependency);
         RegimentSelectWhole.Complete();
-        //BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
-
-
-        //EndInit_ECB.AddJobHandleForProducer(Dependency);
-        Debug.Log("HighlightSelectEnable Enter2");
-        EntityQuery querytest = _entityManager.CreateEntityQuery(typeof(UnitNeedHighlightTag));
-        Debug.Log(querytest.CalculateEntityCount());
+        BeginInit_ECB.AddJobHandleForProducer(RegimentSelectWhole);
             JobHandle EnableHighlight =
                Entities
                    .WithName("showHighlight")
@@ -322,10 +316,10 @@ public class SelectionSystem : SystemBase
                            }
                            ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
                        }
-                    //ecb.RemoveComponent<UnitNeedHighlightTag>(entityInQueryIndex, UnitSelected);
                 }).Schedule(RegimentSelectWhole);
         BeginInit_ECB.AddJobHandleForProducer(EnableHighlight);
-            EnableHighlight.Complete();
+        //EnableHighlight.Complete();
+        Dependency = EnableHighlight;
     }
     #endregion Select and Highlight Enable
 
@@ -378,5 +372,4 @@ public class SelectionSystem : SystemBase
     }
     #endregion Deselect and Highlight Disable
 
-}
-*/
+}*/

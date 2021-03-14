@@ -7,7 +7,8 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Physics;
 using Unity.Physics.Systems;
-
+using Unity.Physics.Extensions;
+using Unity.Physics.Authoring;
 
 [AlwaysUpdateSystem]
 public class SelectionSystemV2 : SystemBase
@@ -28,63 +29,19 @@ public class SelectionSystemV2 : SystemBase
 
     private EntityManager _entityManager;
 
-
-    #region RAYCAST ECS
-
-    //==========================================================================================================================
-    /// <summary>
-    /// ECS RAYCAST BASIC Construction
-    /// </summary>
-    /// <param name="fromPosition"></param>
-    /// <param name="toPosition"></param>
-    /// <returns></returns>
-    private Entity Raycast(float3 fromPosition, float3 toPosition, uint collisionFilter)
-    {
-        BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
-        CollisionWorld collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld;//Seems to connect methods uses for collision to the physics world we created
-
-        RaycastInput raycastInput = new RaycastInput
-        {
-            Start = fromPosition,
-            End = toPosition,
-            //Layer filter
-            Filter = new CollisionFilter
-            {
-                BelongsTo = ~0u, //belongs to all layers
-                CollidesWith = collisionFilter, //collides with all layers
-                GroupIndex = 0,
-            }
-        };
-        Debug.Log("raycastInput " + raycastInput.Filter.CollidesWith);
-        //throw a raycast
-        Unity.Physics.RaycastHit raycastHit = new Unity.Physics.RaycastHit();
-        if (collisionWorld.CastRay(raycastInput, out raycastHit))
-        {
-            //Return the entity hit
-            Entity hitEntity = buildPhysicsWorld.PhysicsWorld.Bodies[raycastHit.RigidBodyIndex].Entity;
-            return hitEntity;
-        }
-        else
-        {
-            return Entity.Null;
-        }
-
-    }
-
-    //==========================================================================================================================
-    #endregion RAYCAST ECS
-
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         base.OnCreate();
         _selectionBoxMinSize = 10f; // careful of the radius or we ended selecting 2 unit at a time
+        BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
+        CollisionWorld collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld;//Seems to connect methods uses for collision to the physics world we created
     }
 
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
-
+        _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
     }
     protected override void OnUpdate()
     {
@@ -97,27 +54,20 @@ public class SelectionSystemV2 : SystemBase
 
             float3 BoxPositionNoZ = new float3(_startPosition.x, _startPosition.y, 0);
             _lowerLeftPosition = BoxPositionNoZ + new float3(-1, -1, 0) * _selectionBoxMinSize * 0.5f;
-            Debug.Log(_lowerLeftPosition);
             _upperRightPosition = BoxPositionNoZ + new float3(1, 1, 0) * _selectionBoxMinSize * 0.5f;
-            Debug.Log(_upperRightPosition);
-            UnityEngine.Ray ray = Camera.main.ScreenPointToRay(_startPosition);
 
-            var filter = new CollisionFilter
+            UnityEngine.Ray ray = Camera.main.ScreenPointToRay(_startPosition);
+            Entity _UnitHit = RaycastUtils.Raycast(ray.origin, ray.direction * 50000f, (uint)RaycastUtils.CollisionLayer.UnitCollision);
+            if (_UnitHit != Entity.Null)
             {
-                CollidesWith = 2u
-            };
-            Entity _UnitHit = Raycast(ray.origin, ray.direction * 50000f, 2u);
-            if(_UnitHit != Entity.Null)
-            {
-                BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
-                Debug.Log("FILTER WORKS" + " " + filter.CollidesWith.ToString() + " " + _UnitHit);
+                Debug.Log("FILTER WORKS " + " " + _UnitHit);
             }
             else
             {
-                Debug.Log("FILTER DONT WORKS" + " " + filter.CollidesWith + " " + _UnitHit);
+                Debug.Log("FILTER DONT WORKS" + " " + (uint)RaycastUtils.CollisionLayer.UnitCollision + " " + _UnitHit);
             }
-
-            /*
+            
+            //
             Entities
             .WithName("OnClickSelected")
             .WithStructuralChanges() // allow to use MainThread structural change , CAREFULL this does not allow BURST COMPILE
@@ -136,7 +86,7 @@ public class SelectionSystemV2 : SystemBase
             })
             .WithoutBurst()
             .Run();
-            */
+            //
         }
         #endregion Left Click Down
 
@@ -193,4 +143,3 @@ public class SelectionSystemV2 : SystemBase
             .Run();
     }
 }
-

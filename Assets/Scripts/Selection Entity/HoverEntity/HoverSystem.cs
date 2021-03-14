@@ -7,74 +7,67 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Physics;
 using Unity.Physics.Systems;
-/*
+
 public class HoverSystem : SystemBase
 {
+    EntityManager _entityManager;
     float3 _OldstartMousePos;
     float3 _startMousePos;
+
+    Entity _eventHolderSelect;
+    Entity _unitHit;
+    Entity _previousEntityHit;
+    Entity _regimentUnitHit;
+    UnityEngine.Ray ray;
 
     protected override void OnCreate()
     {
         base.OnCreate();
+        _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        //Initialize fields
+        ray = Camera.main.ScreenPointToRay(_startMousePos);
         _OldstartMousePos = Input.mousePosition;
         _startMousePos = Input.mousePosition;
+        _unitHit = Entity.Null;
+        _regimentUnitHit = Entity.Null;
+        _previousEntityHit = Entity.Null;
     }
 
-    #region RAYCAST ECS
-
-    //==========================================================================================================================
-    /// <summary>
-    /// ECS RAYCAST BASIC Construction
-    /// </summary>
-    /// <param name="fromPosition"></param>
-    /// <param name="toPosition"></param>
-    /// <returns></returns>
-    private Entity Raycast(float3 fromPosition, float3 toPosition)
+    protected override void OnStartRunning()
     {
-        BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
-        CollisionWorld collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld;//Seems to connect methods uses for collision to the physics world we created
-
-        RaycastInput raycastInput = new RaycastInput
-        {
-            Start = fromPosition,
-            End = toPosition,
-            //Layer filter
-            Filter = new CollisionFilter
-            {
-                BelongsTo = ~0u, //belongs to all layers
-                CollidesWith = ~0u, //collides with all layers
-                GroupIndex = 0,
-            }
-        };
-        //throw a raycast
-        Unity.Physics.RaycastHit raycastHit = new Unity.Physics.RaycastHit();
-        if (collisionWorld.CastRay(raycastInput, out raycastHit))
-        {
-            //Return the entity hit
-            Entity hitEntity = buildPhysicsWorld.PhysicsWorld.Bodies[raycastHit.RigidBodyIndex].Entity;
-            return hitEntity;
-        }
-        else
-        {
-            return Entity.Null;
-        }
-
+        base.OnStartRunning();
+        _eventHolderSelect = GetSingletonEntity<HoverEventHolderTag>();
     }
-
-    //==========================================================================================================================
-    #endregion RAYCAST ECS
 
     protected override void OnUpdate()
     {
         // On hover Unit add Hover on unit
         if (!_startMousePos.Equals(Input.mousePosition))
         {
-            Debug.Log("mouse change");
             _startMousePos = Input.mousePosition;
+            ray = Camera.main.ScreenPointToRay(_startMousePos);
+            _unitHit = RaycastUtils.Raycast(ray.origin, ray.direction * 50000f, (uint)RaycastUtils.CollisionLayer.UnitCollision);
         }
 
-        UnityEngine.Ray ray = Camera.main.ScreenPointToRay(_startMousePos);
-        Entity _UnitHit = Raycast(ray.origin, ray.direction * 50000f);
+        if(_unitHit != _previousEntityHit)
+        {
+            if(_unitHit != Entity.Null) //we enter the unit
+            {
+                //add hover tag on regiment(not unit)
+                _regimentUnitHit = GetComponent<Parent>(_unitHit).Value;
+                _entityManager.AddComponent<HoverTag>(_regimentUnitHit);
+                _entityManager.AddComponent<EnterHoverTag>(_regimentUnitHit); //fire the system for enabling preselections
+                Debug.Log("RegimenthoverAdded" + _regimentUnitHit);
+                _previousEntityHit = _unitHit;
+                //Debug.Log("RegimenthoverAdded _previousEntChange" + _previousEntityHit);
+            }
+            else // we exit the unit
+            {
+                Debug.Log("RegimenthoverRemove" + _regimentUnitHit);
+                _entityManager.AddComponent<ExitHoverTag>(_regimentUnitHit); //fire the system for enabling preselections
+                _previousEntityHit = _unitHit;
+            }
+        }
 
         #region Left Click Down
         if (Input.GetMouseButtonDown(0))
@@ -96,4 +89,3 @@ public class HoverSystem : SystemBase
         #endregion Left Click MAINTAIN
     }
 }
-*/
