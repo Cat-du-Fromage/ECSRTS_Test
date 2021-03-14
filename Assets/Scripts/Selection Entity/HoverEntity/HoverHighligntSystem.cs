@@ -5,17 +5,27 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Rendering;
+
+
+
+//=================================================================================================================================
 /// <summary>
 /// ENABLE PRESELECT HIGHLIGHTS
+/// Dependency: HoverSystem.cs
 /// </summary>
+//=================================================================================================================================
 public class HoverHighligntEnable : SystemBase
 {
-    private EntityQuery _OnEnterHover;
     BeginInitializationEntityCommandBufferSystem ECB_bInit;
+
+    /// <summary>
+    /// WAIT for the component EnterHoverTag
+    /// </summary>
     protected override void OnCreate()
     {
         base.OnCreate();
-        this._OnEnterHover = GetEntityQuery(typeof(EnterHoverTag)); //if the entity query is empty, the system won't update
+        RequireForUpdate(GetEntityQuery(typeof(EnterHoverTag)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
@@ -38,15 +48,22 @@ public class HoverHighligntEnable : SystemBase
         ECB_bInit.AddJobHandleForProducer(Dependency);
     }
 }
-
+//=================================================================================================================================
+/// <summary>
+/// DISABLE Pre-Selection for hovering
+/// Dependency: HoverSystem.cs
+/// </summary>
+//=================================================================================================================================
 public class HoverHighligntDisable : SystemBase
 {
-    private EntityQuery _OnExitHover;
     BeginInitializationEntityCommandBufferSystem ECB_bInit;
+    /// <summary>
+    /// WAIT for the component ExitHoverTag
+    /// </summary>
     protected override void OnCreate()
     {
         base.OnCreate();
-        this._OnExitHover = GetEntityQuery(typeof(ExitHoverTag)); //if the entity query is empty, the system won't update
+        RequireForUpdate(GetEntityQuery(typeof(ExitHoverTag)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
@@ -65,6 +82,7 @@ public class HoverHighligntDisable : SystemBase
                 }
                 RegimentHighlights.Dispose();
                 ecb.RemoveComponent<ExitHoverTag>(entityInQueryIndex, regiment);
+                ecb.RemoveComponent<HoverTag>(entityInQueryIndex, regiment); //remove tag on 
             }).ScheduleParallel();
         ECB_bInit.AddJobHandleForProducer(Dependency);
     }

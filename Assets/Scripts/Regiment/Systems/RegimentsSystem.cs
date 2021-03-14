@@ -76,11 +76,10 @@ public class RegimentsSystem : SystemBase
 /// </summary>
 public class RegimentBufferHighlights : SystemBase
 {
-    private EntityQuery _RegimentHighlightinit;
     private EndInitializationEntityCommandBufferSystem End_init;
     protected override void OnCreate()
     {
-        _RegimentHighlightinit = GetEntityQuery(typeof(RegimentInitHighlightsTAG));
+        RequireForUpdate(GetEntityQuery(typeof(RegimentInitHighlightsTAG)));
         End_init = World.GetExistingSystem<EndInitializationEntityCommandBufferSystem>();
     }
     protected override void OnUpdate()
@@ -108,15 +107,14 @@ public class RegimentBufferHighlights : SystemBase
     }
 }
 /// <summary>
-/// DISABLE all Highlights on units
+/// DISABLE all Highlights(Preselect and Selection) on units
 /// </summary>
 public class RegimentBufferHighlightsInit : SystemBase
 {
-    private EntityQuery _RegimentHideHighlights;
     private BeginSimulationEntityCommandBufferSystem Begin_Sim;
     protected override void OnCreate()
     {
-        _RegimentHideHighlights = GetEntityQuery(typeof(RegimentInitPreselectTAG));
+        RequireForUpdate(GetEntityQuery(typeof(RegimentInitPreselectTAG)));
         Begin_Sim = World.GetExistingSystem<BeginSimulationEntityCommandBufferSystem>();
     }
     protected override void OnUpdate()

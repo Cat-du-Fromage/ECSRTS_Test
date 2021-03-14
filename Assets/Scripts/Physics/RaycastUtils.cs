@@ -162,35 +162,3 @@ public static class RaycastUtils
     Debug.Log("FILTER WORKS GroupIndex " + " " + filtere.GroupIndex + " " + _UnitHit);
 */
 #endregion TIPS
-
-
-/*
-    [ReadOnly] public BitArray32 BitArray;
-    public static CollisionFilter LayerMaskToFilter(LayerMask mask)
-    {
-        CollisionFilter filter = new CollisionFilter()
-        {
-            BelongsTo = (uint)mask.value,
-            CollidesWith = (uint)mask.value
-        };
-        return filter;
-    }
-
-    public static CollisionFilter LayerToFilter(int layer)
-    {
-        if (layer == -1)
-        {
-            return CollisionFilter.Zero;
-        }
-
-        BitArray32 mask = new BitArray32(5);
-        mask[layer] = true;
-
-        CollisionFilter filter = new CollisionFilter()
-        {
-            BelongsTo = mask.Bits,
-            CollidesWith = mask.Bits
-        };
-        return filter;
-    }
-    */

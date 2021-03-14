@@ -9,7 +9,7 @@ public class CameraControl : MonoBehaviour
     private float _rotationSpeed;
 
     private float _maxHeight = 300f;
-    private float _minHeight = 10f;
+    private float _minHeight = 3f;
 
     private  Vector2 startPosition;
     private  Vector2 EndPosition;
@@ -30,7 +30,9 @@ public class CameraControl : MonoBehaviour
         float HorizontalSpeed = Time.deltaTime * (transform.position.y) * _speed * Input.GetAxis("Horizontal");
         float VerticalSpeed = Time.deltaTime * (transform.position.y) * _speed * Input.GetAxis("Vertical");
         float ScrollSpeed = Time.deltaTime * (-_zoomSpeed * Mathf.Log(transform.position.y) * Input.GetAxis("Mouse ScrollWheel"));
-
+        //========================\\
+        //        ZOOM PART       \\
+        //========================\\
         if ( (transform.position.y >= _maxHeight) && (ScrollSpeed > 0) )
         {
             ScrollSpeed = 0;
@@ -39,7 +41,6 @@ public class CameraControl : MonoBehaviour
         {
             ScrollSpeed = 0;
         }
-
         if((transform.position.y + ScrollSpeed) > _maxHeight)
         {
             ScrollSpeed = _maxHeight - transform.position.y;

@@ -10,7 +10,7 @@ using Unity.Physics.Systems;
 using Unity.Physics.Extensions;
 using Unity.Physics.Authoring;
 
-[AlwaysUpdateSystem]
+//[AlwaysUpdateSystem]
 public class SelectionSystemV2 : SystemBase
 {
     private float3 _startPosition;
