@@ -40,8 +40,6 @@ public class HoverSystem : SystemBase
     private float3 _lowerLeftPosition;
     private float3 _upperRightPosition;
 
-    BeginInitializationEntityCommandBufferSystem ECB_bInit;
-
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -52,7 +50,6 @@ public class HoverSystem : SystemBase
         _regimentUnitHit = Entity.Null;
         _previousRegimentHit = Entity.Null;
         _selectionBoxMinSize = 10f; // careful of the radius or we ended selecting 2 unit at a time
-        ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
     protected override void OnStartRunning()
@@ -101,8 +98,24 @@ public class HoverSystem : SystemBase
         //On Hover with a selection box
         if (Input.GetMouseButtonDown(0))
         {
+            Debug.Log("_regimentUnitHit " + _regimentUnitHit);
+            Debug.Log("_previousRegimentHit " + _previousRegimentHit);
+            Debug.Log("DRAG selection mini" + _selectionBoxMinSize);
+            Debug.Log("DRAG selection" + _dragSelection);
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(true); //SelectionBox SHOW
             _startPositionFIX = Input.mousePosition;
+
+            //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            //SELECTION
+            //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            /*
+            if(_unitHit != Entity.Null && !HasComponent<SelectedUnitTag>(_unitHit))
+            {
+                //ADD selectionTag to Regiment.
+                //Launch System to select the whole regiment
+                Debug.Log("Select the Whole Regiment");
+            }
+            */
         }
         #endregion Left Click Down
 
@@ -111,41 +124,72 @@ public class HoverSystem : SystemBase
         {
             _endPositionFIX = Input.mousePosition;
             #region BOX SELECTION
-            _dragSelection = math.length(_startPositionFIX - (float3)Input.mousePosition) > 10 ? 1 : 0; // box selection?
-
+            _dragSelection = math.length(_startPositionFIX - (float3)Input.mousePosition) > _selectionBoxMinSize ? 1 : 0; // box selection?
+            //Debug.Log("DRAG selection mini" + _selectionBoxMinSize);
+            //Debug.Log("DRAG selection" + _dragSelection);
             _widthBoxSelect = Input.mousePosition.x - _startPositionFIX.x;
             _heightBoxSelect = Input.mousePosition.y - _startPositionFIX.y;
 
             SelectionCanvasMono.instance.selectionBox.sizeDelta = new float2(math.abs(_widthBoxSelect), math.abs(_heightBoxSelect));
             SelectionCanvasMono.instance.selectionBox.anchoredPosition = new float2(_startPositionFIX.x, _startPositionFIX.y) + new float2(_widthBoxSelect / 2, _heightBoxSelect / 2);
             #endregion BOX SELECTION
-
-            _lowerLeftPosition = new float3(math.min(_startPositionFIX.x, _endPositionFIX.x), math.min(_startPositionFIX.y, _endPositionFIX.y), 0);
-            _upperRightPosition = new float3(math.max(_startPositionFIX.x, _endPositionFIX.x), math.max(_startPositionFIX.y, _endPositionFIX.y), 0);
-
-            EntityCommandBuffer.ParallelWriter ecb = ECB_bInit.CreateCommandBuffer().AsParallelWriter();
-            /////////////////////////
-            ///ISSUE Need to convert Camera in order to use ECB
-            ////////////////////////
-            
-            /*
-            Entities
-                .WithAll<UnitTag>()//Select Only Entities wit at least this component
-                .WithBurst()
-                .ForEach((Entity unit, int entityInQueryIndex, in Translation translation, in Parent regiment) =>
-                {
-                    //add 
-                    float3 unitPosition = translation.Value;
-                    float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
-                    if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
+            //
+            //Check only when Box selection actually exist
+            //Current Issue:
+            //When drag select do not recognize Unit inside box if your mouse stay on units (when exiting units it works again)
+            //When Click DePreselect the current preselection
+            if(_dragSelection != 0)
+            {
+                _lowerLeftPosition = new float3(math.min(_startPositionFIX.x, _endPositionFIX.x), math.min(_startPositionFIX.y, _endPositionFIX.y), 0);
+                _upperRightPosition = new float3(math.max(_startPositionFIX.x, _endPositionFIX.x), math.max(_startPositionFIX.y, _endPositionFIX.y), 0);
+                //=========================================================================
+                //Add Pre Selection To the unit's regiment if inside the selection Box
+                //Trigger : HoverHighlightSystem.cs - HoverHighligntEnable
+                //=========================================================================
+                Entities
+                    .WithAll<UnitTag>()//Select Only Entities wit at least this component
+                    .WithoutBurst()
+                    .WithStructuralChanges()
+                    .ForEach((Entity unit, in Translation translation, in Parent regiment) =>
                     {
-                        ecb.AddComponent<SelectedUnitTag>(entityInQueryIndex, unit); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
-                        ecb.AddComponent<UnitNeedHighlightTag>(entityInQueryIndex, unit);
-                        //Debug.Log(unit);
-                    }
-                }).Schedule();
-            ECB_bInit.AddJobHandleForProducer(Dependency);
-            */
+                        float3 unitPosition = translation.Value;
+                        float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
+                        if (!HasComponent<HoverTag>(regiment.Value))
+                        {
+                            if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
+                            {
+                                _entityManager.AddComponent<HoverTag>(regiment.Value); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
+                            _entityManager.AddComponent<EnterHoverTag>(regiment.Value);
+                            }
+                        }
+                    }).Run();
+                //=========================================================================
+                //Remove Pre Selection from Regiment who have no units in the box selection
+                //Trigger : HoverHighlightSystem.cs - HoverHighligntDisable
+                //=========================================================================
+                Entities
+                    .WithAll<HoverTag, RegimentTag>()
+                    .WithoutBurst()
+                    .WithStructuralChanges()
+                    .ForEach((Entity Regiment, in DynamicBuffer<Child> unit) =>
+                    {
+                        NativeArray<Entity> AllUnits = unit.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
+                        for (int i = 0; i < AllUnits.Length; i++)
+                        {
+                            float3 unitPosition = GetComponent<Translation>(AllUnits[i]).Value;
+                            float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
+                            if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                _entityManager.AddComponent<ExitHoverTag>(Regiment);
+                            }
+                        }
+                        AllUnits.Dispose();
+                    }).Run();
+            }
         }
         #endregion Left Click MAINTAIN
 
@@ -154,6 +198,17 @@ public class HoverSystem : SystemBase
         {
             _dragSelection = 0;
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(false); //SelectionBox HIDE
+
+            //De Preselect all unit
+            EntityQuery entityHover = GetEntityQuery(typeof(HoverTag));
+            NativeArray<Entity> regiment = entityHover.ToEntityArray(Allocator.Temp);
+
+            foreach(Entity RegHover in regiment)
+            {
+                _entityManager.AddComponent<ExitHoverTag>(RegHover);
+                _entityManager.RemoveComponent<HoverTag>(RegHover);
+            }
+            regiment.Dispose();
         }
         #endregion Left Click UP
     }

@@ -33,6 +33,7 @@ public class HoverHighligntEnable : SystemBase
     {
         EntityCommandBuffer.ParallelWriter ecb = ECB_bInit.CreateCommandBuffer().AsParallelWriter();
         Entities
+            .WithName("WithHOVER")
             .WithAll<RegimentTag, EnterHoverTag>()
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>
@@ -71,6 +72,7 @@ public class HoverHighligntDisable : SystemBase
     {
         EntityCommandBuffer.ParallelWriter ecb = ECB_bInit.CreateCommandBuffer().AsParallelWriter();
         Entities
+            .WithName("NoHOVER")
             .WithAll<RegimentTag, ExitHoverTag>()
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>

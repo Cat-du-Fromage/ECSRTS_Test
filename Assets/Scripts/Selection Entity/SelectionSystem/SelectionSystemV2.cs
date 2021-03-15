@@ -9,7 +9,7 @@ using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Physics.Extensions;
 using Unity.Physics.Authoring;
-
+/*
 //[AlwaysUpdateSystem]
 public class SelectionSystemV2 : SystemBase
 {
@@ -32,7 +32,6 @@ public class SelectionSystemV2 : SystemBase
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        base.OnCreate();
         _selectionBoxMinSize = 10f; // careful of the radius or we ended selecting 2 unit at a time
         BuildPhysicsWorld buildPhysicsWorld = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BuildPhysicsWorld>(); //Seems to connect physics to the current world
         CollisionWorld collisionWorld = buildPhysicsWorld.PhysicsWorld.CollisionWorld;//Seems to connect methods uses for collision to the physics world we created
@@ -119,27 +118,5 @@ public class SelectionSystemV2 : SystemBase
         }
         #endregion Left Click UP
     }
-
-    private void template()
-    {
-        _endPosition = Input.mousePosition;
-        _lowerLeftPosition = new float3(math.min(_startPosition.x, _endPosition.x), math.min(_startPosition.y, _endPosition.y), 0);
-        _upperRightPosition = new float3(math.max(_startPosition.x, _endPosition.x), math.max(_startPosition.y, _endPosition.y), 0);
-        Entities
-            .WithStructuralChanges() // allow to use MainThread structural change , CAREFULL this does not allow BURST COMPILE
-            .WithAll<UnitTag>()//Select Only Entities wit at least this component
-            .ForEach((Entity entity, in Translation translation) =>
-            {
-                float3 entityPosition = translation.Value;
-                float3 screenPos = Camera.main.WorldToScreenPoint(entityPosition);
-                if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
-                {
-                    _entityManager.AddComponent<SelectedUnitTag>(entity); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
-                            _entityManager.AddComponent<UnitNeedHighlightTag>(entity);
-                    Debug.Log(entity);
-                }
-            })
-            .WithoutBurst()
-            .Run();
-    }
 }
+*/
