@@ -138,7 +138,7 @@ public class HoverSystem : SystemBase
             //Current Issue:
             //When drag select do not recognize Unit inside box if your mouse stay on units (when exiting units it works again)
             //When Click DePreselect the current preselection
-            if(_dragSelection != 0)
+            if(_dragSelection == 1)
             {
                 _lowerLeftPosition = new float3(math.min(_startPositionFIX.x, _endPositionFIX.x), math.min(_startPositionFIX.y, _endPositionFIX.y), 0);
                 _upperRightPosition = new float3(math.max(_startPositionFIX.x, _endPositionFIX.x), math.max(_startPositionFIX.y, _endPositionFIX.y), 0);
@@ -147,21 +147,25 @@ public class HoverSystem : SystemBase
                 //Trigger : HoverHighlightSystem.cs - HoverHighligntEnable
                 //=========================================================================
                 Entities
-                    .WithAll<UnitTag>()//Select Only Entities wit at least this component
-                    .WithoutBurst()
+                    .WithAll<RegimentTag>()
+                    .WithNone<HoverTag>()
                     .WithStructuralChanges()
-                    .ForEach((Entity unit, in Translation translation, in Parent regiment) =>
+                    .WithoutBurst()
+                    .ForEach((Entity regiment, in DynamicBuffer<Child> units) =>
                     {
-                        float3 unitPosition = translation.Value;
-                        float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
-                        if (!HasComponent<HoverTag>(regiment.Value))
+                        NativeArray<Entity> unitsRegiment = units.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
+                        for(int i = 0; i< unitsRegiment.Length; i++)
                         {
+                            float3 unitPosition = GetComponent<Translation>(unitsRegiment[i]).Value;
+                            float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
                             if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
                             {
-                                _entityManager.AddComponent<HoverTag>(regiment.Value); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
-                            _entityManager.AddComponent<EnterHoverTag>(regiment.Value);
+                                _entityManager.AddComponent<HoverTag>(regiment); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
+                                _entityManager.AddComponent<EnterHoverTag>(regiment);
+                                break;
                             }
                         }
+                        unitsRegiment.Dispose();
                     }).Run();
                 //=========================================================================
                 //Remove Pre Selection from Regiment who have no units in the box selection
@@ -182,7 +186,7 @@ public class HoverSystem : SystemBase
                             {
                                 break;
                             }
-                            else
+                            if(i == AllUnits.Length - 1)
                             {
                                 _entityManager.AddComponent<ExitHoverTag>(Regiment);
                             }
@@ -196,19 +200,21 @@ public class HoverSystem : SystemBase
         #region Left Click UP
         if (Input.GetMouseButtonUp(0))
         {
-            _dragSelection = 0;
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(false); //SelectionBox HIDE
-
-            //De Preselect all unit
-            EntityQuery entityHover = GetEntityQuery(typeof(HoverTag));
-            NativeArray<Entity> regiment = entityHover.ToEntityArray(Allocator.Temp);
-
-            foreach(Entity RegHover in regiment)
+            if(_dragSelection == 1)
             {
-                _entityManager.AddComponent<ExitHoverTag>(RegHover);
-                _entityManager.RemoveComponent<HoverTag>(RegHover);
+                //De Preselect all unit
+                EntityQuery entityHover = GetEntityQuery(typeof(HoverTag));
+                NativeArray<Entity> regiment = entityHover.ToEntityArray(Allocator.Temp);
+
+                foreach (Entity RegHover in regiment)
+                {
+                    _entityManager.AddComponent<ExitHoverTag>(RegHover);
+                    _entityManager.RemoveComponent<HoverTag>(RegHover);
+                }
+                regiment.Dispose();
+                _dragSelection = 0;
             }
-            regiment.Dispose();
         }
         #endregion Left Click UP
     }
