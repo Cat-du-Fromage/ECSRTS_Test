@@ -78,18 +78,18 @@ public class EnableHighlight : SystemBase
             .ForEach((Entity RegimentSelected, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
             {
                 NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
-                for (int i = 1; i < highlightsReg.Length; i++)
+                for (int i = 0; i < highlightsReg.Length; i++)
                 {
                     if (HasComponent<Disabled>(highlightsReg[i]))
                     {
-                        //UnityEngine.Debug.Log("HighlightEnable Pass3");
                         ecbBsim.RemoveComponent<Disabled>(entityInQueryIndex, highlightsReg[i]);
                     }
                 }
                 highlightsReg.Dispose();
                 ecbBsim.AddComponent<RegimentSelectedTag>(entityInQueryIndex, RegimentSelected);
+                UnityEngine.Debug.Log("ADDED OK");
                 ecbBsim.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, RegimentSelected);
-            }).ScheduleParallel();
+            }).Schedule();
         ECB_bSim.AddJobHandleForProducer(this.Dependency);
     }
 }
@@ -120,7 +120,7 @@ public class HighlightDisable : SystemBase
             .ForEach((Entity regimentDeselect, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
             {
                 NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
-                for (int i = 1; i < highlightsReg.Length; i++)
+                for (int i = 0; i < highlightsReg.Length; i++)
                 {
                     if (!HasComponent<Disabled>(highlightsReg[i]))
                     {
@@ -129,6 +129,7 @@ public class HighlightDisable : SystemBase
                 }
                 highlightsReg.Dispose();
                 ecbBsim.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, regimentDeselect);
+                UnityEngine.Debug.Log("REMOVE OK");
                 ecbBsim.RemoveComponent<RegimentDeselect>(entityInQueryIndex, regimentDeselect);
             }).Schedule();
         ECB_bSim.AddJobHandleForProducer(Dependency);

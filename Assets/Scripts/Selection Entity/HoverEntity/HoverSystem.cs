@@ -102,29 +102,45 @@ public class HoverSystem : SystemBase
             _startPositionFIX = Input.mousePosition;
 
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            //SELECTION sans CTRL pour le moment
+            //SELECTION
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            if(_unitHit != Entity.Null && !HasComponent<SelectedUnitTag>(_unitHit))
+            if (_unitHit != Entity.Null)
             {
-                //ADD selectionTag to Regiment.
-                //Launch System to select the whole regiment
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
-                Debug.Log("Select the Whole Regiment");
-            }
-            else
-            {
-                EntityQuery RegimentsSelec = GetEntityQuery(typeof(RegimentSelectedTag));
-                Debug.Log("query " + RegimentsSelec);
-                NativeArray<Entity> RegSelectArray = RegimentsSelec.ToEntityArray(Allocator.Temp);
-                Debug.Log("query " + RegSelectArray.Length);
-                foreach (Entity regiment in RegSelectArray)
+                if(!HasComponent<RegimentSelectedTag>(_regimentUnitHit)) //not yet selected
                 {
-                    _entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+                    if (!Input.GetKey(KeyCode.LeftControl)) // NO CTRL
+                    {
+                        //Deselect all regiment first
+                        EntityQuery Regimentselected = GetEntityQuery(typeof(RegimentSelectedTag));
+                        NativeArray<Entity> RegSelect = Regimentselected.ToEntityArray(Allocator.Temp);
+                        for (int i = 0; i < RegSelect.Length; i++)
+                        {
+                            _entityManager.AddComponent<RegimentDeselect>(RegSelect[i]);
+                        }
+                        RegSelect.Dispose();
+                    }
+                    //select regiment of the unit
+                    _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
                 }
-                RegSelectArray.Dispose();
-                //_entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+                else //already selected
+                {
+                    if(Input.GetKey(KeyCode.LeftControl)) // WITH CTRL
+                    {
+                        _entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+                    }
+                }
             }
-            
+            else //deselect all if nothing ...... FORGOT CTRL!!!
+            {
+                Entities
+                    .WithAll<RegimentTag, RegimentSelectedTag>()
+                    .WithoutBurst()
+                    .WithStructuralChanges()
+                    .ForEach((Entity regiment) =>
+                    {
+                        _entityManager.AddComponent<RegimentDeselect>(regiment);
+                    }).Run();
+            }
         }
         #endregion Left Click Down
 
