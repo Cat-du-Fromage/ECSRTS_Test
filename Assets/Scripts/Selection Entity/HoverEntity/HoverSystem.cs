@@ -98,24 +98,33 @@ public class HoverSystem : SystemBase
         //On Hover with a selection box
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("_regimentUnitHit " + _regimentUnitHit);
-            Debug.Log("_previousRegimentHit " + _previousRegimentHit);
-            Debug.Log("DRAG selection mini" + _selectionBoxMinSize);
-            Debug.Log("DRAG selection" + _dragSelection);
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(true); //SelectionBox SHOW
             _startPositionFIX = Input.mousePosition;
 
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            //SELECTION
+            //SELECTION sans CTRL pour le moment
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            /*
             if(_unitHit != Entity.Null && !HasComponent<SelectedUnitTag>(_unitHit))
             {
                 //ADD selectionTag to Regiment.
                 //Launch System to select the whole regiment
+                _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
                 Debug.Log("Select the Whole Regiment");
             }
-            */
+            else
+            {
+                EntityQuery RegimentsSelec = GetEntityQuery(typeof(RegimentSelectedTag));
+                Debug.Log("query " + RegimentsSelec);
+                NativeArray<Entity> RegSelectArray = RegimentsSelec.ToEntityArray(Allocator.Temp);
+                Debug.Log("query " + RegSelectArray.Length);
+                foreach (Entity regiment in RegSelectArray)
+                {
+                    _entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+                }
+                RegSelectArray.Dispose();
+                //_entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+            }
+            
         }
         #endregion Left Click Down
 
@@ -125,8 +134,7 @@ public class HoverSystem : SystemBase
             _endPositionFIX = Input.mousePosition;
             #region BOX SELECTION
             _dragSelection = math.length(_startPositionFIX - (float3)Input.mousePosition) > _selectionBoxMinSize ? 1 : 0; // box selection?
-            //Debug.Log("DRAG selection mini" + _selectionBoxMinSize);
-            //Debug.Log("DRAG selection" + _dragSelection);
+
             _widthBoxSelect = Input.mousePosition.x - _startPositionFIX.x;
             _heightBoxSelect = Input.mousePosition.y - _startPositionFIX.y;
 
