@@ -87,7 +87,6 @@ public class EnableHighlight : SystemBase
                 }
                 highlightsReg.Dispose();
                 ecbBsim.AddComponent<RegimentSelectedTag>(entityInQueryIndex, RegimentSelected);
-                UnityEngine.Debug.Log("ADDED OK");
                 ecbBsim.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, RegimentSelected);
             }).Schedule();
         ECB_bSim.AddJobHandleForProducer(this.Dependency);

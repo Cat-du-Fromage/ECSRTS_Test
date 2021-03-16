@@ -44,6 +44,7 @@ public class HoverHighligntEnable : SystemBase
                     ecb.RemoveComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].UnitPreselect);
                 }
                 RegimentHighlights.Dispose();
+                //var test1 = GetEntityQuery(typeof(HighlightTag));
                 ecb.RemoveComponent<EnterHoverTag>(entityInQueryIndex, regiment);
             }).ScheduleParallel();
         ECB_bInit.AddJobHandleForProducer(Dependency);
@@ -52,7 +53,7 @@ public class HoverHighligntEnable : SystemBase
 //=================================================================================================================================
 /// <summary>
 /// DISABLE Pre-Selection for hovering
-/// Dependency: HoverSystem.cs
+/// TriggerBy: HoverSystem.cs
 /// </summary>
 //=================================================================================================================================
 public class HoverHighligntDisable : SystemBase
