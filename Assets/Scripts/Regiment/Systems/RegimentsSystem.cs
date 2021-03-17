@@ -56,9 +56,13 @@ public class RegimentsSystem : SystemBase
         EntityQuery spawnerQ = GetEntityQuery(typeof(SpawnerUnitsTag));
         Entity spawner = spawnerQ.GetSingletonEntity();
         Spawn_UnitFusilier spawnerPrefab = _entityManager.GetComponentData<Spawn_UnitFusilier>(spawner);
-
         Entity RegimentFusilier = _entityManager.CreateEntity(_regimentFusilierArchetype);
-        _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier { Size = 10 });//find a way to assign a number to a class Component
+        /*
+        CompRegimentClass_Fusilier a = new CompRegimentClass_Fusilier();
+        a.Size = 10;
+        a = new CompRegimentClass_Fusilier();
+        */
+        _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier {Size = 10 });//find a way to assign a number to a class Component
         if (unitType == UnitFusilier.PrussianFusilier)
         {
             _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
