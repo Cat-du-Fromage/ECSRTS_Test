@@ -100,40 +100,52 @@ public class HoverSystem : SystemBase
         {
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(true); //SelectionBox SHOW
             _startPositionFIX = Input.mousePosition;
-
+            EntityQuery Regimentselected = GetEntityQuery(typeof(RegimentSelectedTag));
+            EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
             //SELECTION
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
             #region Selection OnClickDown
-            if (_unitHit != Entity.Null)
+            if(Input.GetKey(KeyCode.LeftControl))
             {
-                if(!HasComponent<RegimentSelectedTag>(_regimentUnitHit)) //not yet selected
+                if(_unitHit == Entity.Null)
                 {
-                    if (!Input.GetKey(KeyCode.LeftControl)) // NO CTRL
-                    {
-                        //Deselect all regiment first
-                        EntityQuery Regimentselected = GetEntityQuery(typeof(HoverTag));
-                        _entityManager.AddComponent<RegimentDeselect>(Regimentselected);
-                    }
-                    //select regiment of the unit
-                    _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
+                    return;
                 }
-                else //already selected
+                else
                 {
-                    if(Input.GetKey(KeyCode.LeftControl)) // WITH CTRL
+                    if (HasComponent<RegimentSelectedTag>(_regimentUnitHit))
                     {
                         _entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
                     }
+                    else
+                    {
+                        _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
+                    }
                 }
             }
-            if (!Input.GetKey(KeyCode.LeftControl) && _unitHit == Entity.Null) //deselect all if nothing ...... FORGOT CTRL!!!
+            else
             {
-                EntityQuery Regimentselected = GetEntityQuery(ComponentType.ReadOnly<RegimentSelectedTag>());
-                _entityManager.AddComponent<RegimentDeselect>(Regimentselected);
-
-                EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(RegimentHovered);
+                //Query all unit selected except the one Hovering(so we dont deselect it)
+                EntityQueryDesc RegimentSelectNoHover = new EntityQueryDesc
+                {
+                    All = new ComponentType[] { typeof(RegimentSelectedTag) },
+                    None = new ComponentType[] { typeof(HoverTag) }
+                };
+                if (_unitHit == Entity.Null)
+                {
+                    _entityManager.AddComponent<RegimentDeselect>(Regimentselected);
+                }
+                else
+                {
+                    _entityManager.AddComponent<RegimentDeselect>(GetEntityQuery(RegimentSelectNoHover));
+                    if (!HasComponent<RegimentSelectedTag>(_regimentUnitHit))
+                    {
+                        _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
+                    }
+                }
             }
+
             #endregion Selection OnClickDown
         }
         #endregion Left Click Down
@@ -219,38 +231,31 @@ public class HoverSystem : SystemBase
         if (Input.GetMouseButtonUp(0))
         {
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(false); //SelectionBox HIDE
-            //si CTRL -> 
-            /*
-            EntityQueryDesc RegimentHoveredNotSelect = new EntityQueryDesc
+
+            EntityQueryDesc HoveredNotSelect = new EntityQueryDesc //hovered but not selected
             {
                 All = new ComponentType[] { typeof(HoverTag) },
                 None = new ComponentType[] { typeof(RegimentSelectedTag) }
             };
-            EntityQueryDesc RegimentSelectNoHover = new EntityQueryDesc
+            EntityQueryDesc SelectNoHover = new EntityQueryDesc //selected but not hovered
             {
                 All = new ComponentType[] { typeof(RegimentSelectedTag) },
                 None = new ComponentType[] { typeof(HoverTag) }
             };
-            */
-            //EntityQuery Regimentselected = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
             EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
-            //NO DESELECTION when CTRL box selection
-            /*
-            if (Input.GetKey(KeyCode.LeftControl))
-            {
-                //SI hover et NON select alors add sinon REMOVE
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(RegimentHoveredNotSelect));
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(RegimentHoveredNotSelect));
-            }
-            else //PAS CTRL?
-            {
-                _entityManager.AddComponent<RegimentDeselect>(GetEntityQuery(RegimentSelectNoHover));
-                _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(RegimentHoveredNotSelect));
-            }
-            */
-            //NO DESELECTION when box selection
             if (_dragSelection == 1)
             {
+                if (Input.GetKey(KeyCode.LeftControl))
+                {
+                    _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(HoveredNotSelect));
+                }
+                else
+                {
+                    _entityManager.AddComponent<RegimentDeselect>(GetEntityQuery(SelectNoHover));
+                    _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(HoveredNotSelect));
+                }
+
+
                 _entityManager.AddComponent<ExitHoverTag>(RegimentHovered);
             }
             _dragSelection = 0;

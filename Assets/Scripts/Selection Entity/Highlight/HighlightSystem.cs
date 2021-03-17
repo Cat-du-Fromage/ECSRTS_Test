@@ -88,7 +88,7 @@ public class EnableHighlight : SystemBase
                 highlightsReg.Dispose();
                 ecbBsim.AddComponent<RegimentSelectedTag>(entityInQueryIndex, RegimentSelected);
                 ecbBsim.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, RegimentSelected);
-            }).Schedule();
+            }).ScheduleParallel();
         ECB_bSim.AddJobHandleForProducer(this.Dependency);
     }
 }
@@ -130,7 +130,7 @@ public class HighlightDisable : SystemBase
                 ecbBsim.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, regimentDeselect);
                 UnityEngine.Debug.Log("REMOVE OK");
                 ecbBsim.RemoveComponent<RegimentDeselect>(entityInQueryIndex, regimentDeselect);
-            }).Schedule();
+            }).ScheduleParallel();
         ECB_bSim.AddJobHandleForProducer(Dependency);
     }
 }
