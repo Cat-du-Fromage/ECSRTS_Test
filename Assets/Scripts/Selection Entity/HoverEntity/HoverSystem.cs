@@ -7,6 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Physics;
 using Unity.Physics.Systems;
+using CameraUtils;
 //=================================================================================================================================
 /// <summary>
 /// Always Fire by getting the singelton <HoverEventHolderTag>
@@ -40,6 +41,7 @@ public class HoverSystem : SystemBase
     private float3 _lowerLeftPosition;
     private float3 _upperRightPosition;
 
+
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -56,11 +58,11 @@ public class HoverSystem : SystemBase
     {
         _dragSelection = 0;
         _eventHolderSelect = GetSingletonEntity<HoverEventHolderTag>();
-        ray = Camera.main.ScreenPointToRay(_startMousePos);
+        //ray = Camera.main.ScreenPointToRay(_startMousePos);
     }
 
     protected override void OnUpdate()
-    {
+    {/*
         // On hover Unit add Hover on unit
         if(_dragSelection == 0) //
         {
@@ -77,31 +79,31 @@ public class HoverSystem : SystemBase
             {
                 if (_regimentUnitHit == Entity.Null) //we enter the unit
                 {
-                    _entityManager.AddComponent<ExitHoverTag>(_previousRegimentHit); //fire the system for disabling preselections
+                    _entityManager.AddComponent<Trigger_Disable_Hover>(_previousRegimentHit); //fire the system for disabling preselections
                 }
                 else if (_previousRegimentHit == Entity.Null)
                 {
-                    _entityManager.AddComponent<HoverTag>(_regimentUnitHit); //Add Hovertag to the regiment
-                    _entityManager.AddComponent<EnterHoverTag>(_regimentUnitHit); //Add preselection to current preselection
+                    _entityManager.AddComponent<State_Hovered>(_regimentUnitHit); //Add Hovertag to the regiment
+                    _entityManager.AddComponent<Trigger_Enable_Hover>(_regimentUnitHit); //Add preselection to current preselection
                 }
                 else // we exit the unit
                 {
-                    _entityManager.AddComponent<ExitHoverTag>(_previousRegimentHit); //Remove preselect from previous regiment
-                    _entityManager.AddComponent<HoverTag>(_regimentUnitHit); //Add Hovertag to the regiment
-                    _entityManager.AddComponent<EnterHoverTag>(_regimentUnitHit); //Add preselection to current preselection
+                    _entityManager.AddComponent<Trigger_Disable_Hover>(_previousRegimentHit); //Remove preselect from previous regiment
+                    _entityManager.AddComponent<State_Hovered>(_regimentUnitHit); //Add Hovertag to the regiment
+                    _entityManager.AddComponent<Trigger_Enable_Hover>(_regimentUnitHit); //Add preselection to current preselection
                 }
                 _previousRegimentHit = _regimentUnitHit;
             }
         }
-
+        */
         #region Left Click Down
         //On Hover with a selection box
         if (Input.GetMouseButtonDown(0))
         {
             SelectionCanvasMono.instance.selectionBox.gameObject.SetActive(true); //SelectionBox SHOW
             _startPositionFIX = Input.mousePosition;
-            EntityQuery Regimentselected = GetEntityQuery(typeof(RegimentSelectedTag));
-            EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
+            EntityQuery Regimentselected = GetEntityQuery(typeof(State_Selected));
+            EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<State_Hovered>());
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
             //SELECTION
             //XXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -114,13 +116,13 @@ public class HoverSystem : SystemBase
                 }
                 else
                 {
-                    if (HasComponent<RegimentSelectedTag>(_regimentUnitHit))
+                    if (HasComponent<State_Selected>(_regimentUnitHit))
                     {
-                        _entityManager.AddComponent<RegimentDeselect>(_regimentUnitHit);
+                        _entityManager.AddComponent<Trigger_Disable_Selection>(_regimentUnitHit); //trigger highlight disable
                     }
                     else
                     {
-                        _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
+                        _entityManager.AddComponent<Trigger_Enable_Selection>(_regimentUnitHit); //trigger highlight enable
                     }
                 }
             }
@@ -129,19 +131,19 @@ public class HoverSystem : SystemBase
                 //Query all unit selected except the one Hovering(so we dont deselect it)
                 EntityQueryDesc RegimentSelectNoHover = new EntityQueryDesc
                 {
-                    All = new ComponentType[] { typeof(RegimentSelectedTag) },
-                    None = new ComponentType[] { typeof(HoverTag) }
+                    All = new ComponentType[] { typeof(State_Selected) },
+                    None = new ComponentType[] { typeof(State_Hovered) }
                 };
                 if (_unitHit == Entity.Null)
                 {
-                    _entityManager.AddComponent<RegimentDeselect>(Regimentselected);
+                    _entityManager.AddComponent<Trigger_Disable_Selection>(Regimentselected); //trigger highlight disable
                 }
                 else
                 {
-                    _entityManager.AddComponent<RegimentDeselect>(GetEntityQuery(RegimentSelectNoHover));
-                    if (!HasComponent<RegimentSelectedTag>(_regimentUnitHit))
+                    _entityManager.AddComponent<Trigger_Disable_Selection>(GetEntityQuery(RegimentSelectNoHover)); //trigger highlight disable
+                    if (!HasComponent<State_Selected>(_regimentUnitHit))
                     {
-                        _entityManager.AddComponent<RegimentUnitSelectedTag>(_regimentUnitHit);
+                        _entityManager.AddComponent<Trigger_Enable_Selection>(_regimentUnitHit);//trigger highlight enable
                     }
                 }
             }
@@ -165,9 +167,7 @@ public class HoverSystem : SystemBase
             #endregion BOX SELECTION
             //
             //Check only when Box selection actually exist
-            //Current Issue:
-            //When drag select do not recognize Unit inside box if your mouse stay on units (when exiting units it works again)
-            //When Click DePreselect the current preselection
+            /*
             if(_dragSelection == 1)
             {
                 _lowerLeftPosition = new float3(math.min(_startPositionFIX.x, _endPositionFIX.x), math.min(_startPositionFIX.y, _endPositionFIX.y), 0);
@@ -178,7 +178,7 @@ public class HoverSystem : SystemBase
                 //=========================================================================
                 Entities
                     .WithAll<RegimentTag>()
-                    .WithNone<HoverTag>()
+                    .WithNone<State_Hovered>()
                     .WithStructuralChanges()
                     .WithoutBurst()
                     .ForEach((Entity regiment, in DynamicBuffer<Child> units) =>
@@ -190,7 +190,7 @@ public class HoverSystem : SystemBase
                             float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
                             if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
                             {
-                                _entityManager.AddComponent<HoverTag>(regiment); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
+                                _entityManager.AddComponent<State_Hovered>(regiment); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
                                 _entityManager.AddComponent<EnterHoverTag>(regiment);
                                 break;
                             }
@@ -202,7 +202,7 @@ public class HoverSystem : SystemBase
                 //Trigger : HoverHighlightSystem.cs - HoverHighligntDisable
                 //=========================================================================
                 Entities
-                    .WithAll<HoverTag, RegimentTag>()
+                    .WithAll<State_Hovered, RegimentTag>()
                     .WithoutBurst()
                     .WithStructuralChanges()
                     .ForEach((Entity Regiment, in DynamicBuffer<Child> unit) =>
@@ -218,12 +218,13 @@ public class HoverSystem : SystemBase
                             }
                             if(i == AllUnits.Length - 1)
                             {
-                                _entityManager.AddComponent<ExitHoverTag>(Regiment);
+                                _entityManager.AddComponent<Trigger_Disable_Hover>(Regiment);
                             }
                         }
                         AllUnits.Dispose();
                     }).Run();
             }
+            */
         }
         #endregion Left Click MAINTAIN
 
@@ -234,29 +235,29 @@ public class HoverSystem : SystemBase
 
             EntityQueryDesc HoveredNotSelect = new EntityQueryDesc //hovered but not selected
             {
-                All = new ComponentType[] { typeof(HoverTag) },
-                None = new ComponentType[] { typeof(RegimentSelectedTag) }
+                All = new ComponentType[] { typeof(State_Hovered) },
+                None = new ComponentType[] { typeof(State_Selected) }
             };
             EntityQueryDesc SelectNoHover = new EntityQueryDesc //selected but not hovered
             {
-                All = new ComponentType[] { typeof(RegimentSelectedTag) },
-                None = new ComponentType[] { typeof(HoverTag) }
+                All = new ComponentType[] { typeof(State_Selected) },
+                None = new ComponentType[] { typeof(State_Hovered) }
             };
-            EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<HoverTag>());
+            EntityQuery RegimentHovered = GetEntityQuery(ComponentType.ReadOnly<State_Hovered>());
             if (_dragSelection == 1)
             {
                 if (Input.GetKey(KeyCode.LeftControl))
                 {
-                    _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(HoveredNotSelect));
+                    _entityManager.AddComponent<Trigger_Enable_Selection>(GetEntityQuery(HoveredNotSelect));
                 }
                 else
                 {
-                    _entityManager.AddComponent<RegimentDeselect>(GetEntityQuery(SelectNoHover));
-                    _entityManager.AddComponent<RegimentUnitSelectedTag>(GetEntityQuery(HoveredNotSelect));
+                    _entityManager.AddComponent<Trigger_Disable_Selection>(GetEntityQuery(SelectNoHover));
+                    _entityManager.AddComponent<Trigger_Enable_Selection>(GetEntityQuery(HoveredNotSelect));
                 }
 
 
-                _entityManager.AddComponent<ExitHoverTag>(RegimentHovered);
+                _entityManager.AddComponent<Trigger_Disable_Hover>(RegimentHovered);
             }
             _dragSelection = 0;
         }

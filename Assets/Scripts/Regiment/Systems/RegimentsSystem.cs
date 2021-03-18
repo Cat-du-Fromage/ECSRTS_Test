@@ -7,9 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 using Unity.Rendering;
 using Unity.Physics;
-//[AlwaysUpdateSystem]
-//[UpdateAfter(typeof(SelectionSystem))]
-//[UpdateInGroup(typeof(SelectionSystem))]
+
 public class RegimentsSystem : SystemBase
 {
     public enum UnitFusilier
@@ -31,7 +29,7 @@ public class RegimentsSystem : SystemBase
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        _regimentFusilierArchetype = _entityManager.CreateArchetype(typeof(RegimentTag),typeof(RegimentUnassignedTag),typeof(LocalToWorld),typeof(RegimentHighlightsBuffer),typeof(RegimentPreSelectBuffer),typeof(Translation),typeof(RenderBounds), typeof(CompRegimentClass_Fusilier)); // set the archetype of a new Regiment
+        _regimentFusilierArchetype = _entityManager.CreateArchetype(typeof(RegimentTag),typeof(State_Unassigned),typeof(LocalToWorld),typeof(RegimentHighlightsBuffer),typeof(RegimentPreSelectBuffer),typeof(Translation),typeof(RenderBounds), typeof(CompRegimentClass_Fusilier)); // set the archetype of a new Regiment
     }
 
     protected override void OnUpdate()

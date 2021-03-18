@@ -25,7 +25,7 @@ public class HoverHighligntEnable : SystemBase
     protected override void OnCreate()
     {
         base.OnCreate();
-        RequireForUpdate(GetEntityQuery(typeof(EnterHoverTag)));
+        RequireForUpdate(GetEntityQuery(typeof(Trigger_Enable_Hover)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
@@ -34,7 +34,7 @@ public class HoverHighligntEnable : SystemBase
         EntityCommandBuffer.ParallelWriter ecb = ECB_bInit.CreateCommandBuffer().AsParallelWriter();
         Entities
             .WithName("WithHOVER")
-            .WithAll<RegimentTag, EnterHoverTag>()
+            .WithAll<RegimentTag, Trigger_Enable_Hover>()
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>
             {
@@ -44,8 +44,7 @@ public class HoverHighligntEnable : SystemBase
                     ecb.RemoveComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].UnitPreselect);
                 }
                 RegimentHighlights.Dispose();
-                //var test1 = GetEntityQuery(typeof(HighlightTag));
-                ecb.RemoveComponent<EnterHoverTag>(entityInQueryIndex, regiment);
+                ecb.RemoveComponent<Trigger_Enable_Hover>(entityInQueryIndex, regiment);
             }).ScheduleParallel();
         ECB_bInit.AddJobHandleForProducer(Dependency);
     }
@@ -65,7 +64,7 @@ public class HoverHighligntDisable : SystemBase
     protected override void OnCreate()
     {
         base.OnCreate();
-        RequireForUpdate(GetEntityQuery(typeof(ExitHoverTag)));
+        RequireForUpdate(GetEntityQuery(typeof(Trigger_Disable_Hover)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
@@ -74,7 +73,7 @@ public class HoverHighligntDisable : SystemBase
         EntityCommandBuffer.ParallelWriter ecb = ECB_bInit.CreateCommandBuffer().AsParallelWriter();
         Entities
             .WithName("NoHOVER")
-            .WithAll<RegimentTag, ExitHoverTag>()
+            .WithAll<RegimentTag, Trigger_Disable_Hover>()
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>
             {
@@ -84,8 +83,8 @@ public class HoverHighligntDisable : SystemBase
                     ecb.AddComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].UnitPreselect);
                 }
                 RegimentHighlights.Dispose();
-                ecb.RemoveComponent<ExitHoverTag>(entityInQueryIndex, regiment);
-                ecb.RemoveComponent<HoverTag>(entityInQueryIndex, regiment); //remove tag on 
+                ecb.RemoveComponent<Trigger_Disable_Hover>(entityInQueryIndex, regiment);
+                ecb.RemoveComponent<State_Hovered>(entityInQueryIndex, regiment); //remove tag on 
             }).ScheduleParallel();
         ECB_bInit.AddJobHandleForProducer(Dependency);
     }

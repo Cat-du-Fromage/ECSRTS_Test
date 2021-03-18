@@ -18,7 +18,7 @@ public class UnitsSystem : SystemBase
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        this._unassignedRegiment = GetEntityQuery(typeof(RegimentUnassignedTag));
+        this._unassignedRegiment = GetEntityQuery(typeof(State_Unassigned));
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
 
@@ -31,7 +31,7 @@ public class UnitsSystem : SystemBase
             Entities
                 .WithName("UNITSPAWN")
                 .WithBurst()
-                .WithAll<RegimentUnassignedTag, CompRegimentClass_Fusilier>()
+                .WithAll<State_Unassigned, CompRegimentClass_Fusilier>()
                 .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
                 {
                     //allocate memory
@@ -46,7 +46,7 @@ public class UnitsSystem : SystemBase
                     } //GetBuffer<Child>(Unit)[0]
                     RegimentUnits.Dispose();
                     BeginInitecb.AddComponent<RegimentInitHighlightsTAG>(entityInQueryIndex, Regiment);
-                    BeginInitecb.RemoveComponent<RegimentUnassignedTag>(entityInQueryIndex, Regiment);
+                    BeginInitecb.RemoveComponent<State_Unassigned>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities
             BeginInit_ECB.AddJobHandleForProducer(this.Dependency);
         }

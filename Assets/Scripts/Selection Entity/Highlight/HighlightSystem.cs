@@ -17,7 +17,7 @@ public class EnableHighlight : SystemBase
     protected override void OnCreate()
     {
         ECB_bSim = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        RequireForUpdate(GetEntityQuery(typeof(RegimentUnitSelectedTag)));
+        RequireForUpdate(GetEntityQuery(typeof(Trigger_Enable_Selection)));
     }
 
     protected override void OnUpdate()
@@ -25,7 +25,7 @@ public class EnableHighlight : SystemBase
         EntityCommandBuffer.ParallelWriter ecbBsim = ECB_bSim.CreateCommandBuffer().AsParallelWriter();
         UnityEngine.Debug.Log("HighlightEnable");
         Entities
-            .WithAll<RegimentTag, RegimentUnitSelectedTag>()
+            .WithAll<RegimentTag, Trigger_Enable_Selection>()
             .WithName("HIGHLIGHTenable")
             .WithBurst()
             .ForEach((Entity RegimentSelected, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
@@ -39,8 +39,8 @@ public class EnableHighlight : SystemBase
                     }
                 }
                 highlightsReg.Dispose();
-                ecbBsim.AddComponent<RegimentSelectedTag>(entityInQueryIndex, RegimentSelected);
-                ecbBsim.RemoveComponent<RegimentUnitSelectedTag>(entityInQueryIndex, RegimentSelected);
+                ecbBsim.AddComponent<State_Selected>(entityInQueryIndex, RegimentSelected);
+                ecbBsim.RemoveComponent<Trigger_Enable_Selection>(entityInQueryIndex, RegimentSelected);
             }).ScheduleParallel();
         ECB_bSim.AddJobHandleForProducer(this.Dependency);
     }
@@ -58,7 +58,7 @@ public class HighlightDisable : SystemBase
     protected override void OnCreate()
     {
         ECB_bSim = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-        RequireForUpdate(GetEntityQuery(typeof(RegimentDeselect)));
+        RequireForUpdate(GetEntityQuery(typeof(Trigger_Disable_Selection)));
     }
     protected override void OnUpdate()
     {
@@ -67,7 +67,7 @@ public class HighlightDisable : SystemBase
         UnityEngine.Debug.Log("HighlightDnable");
         Entities
             .WithName("HIGHLIGHTDISABLE")
-            .WithAll<RegimentDeselect>()
+            .WithAll<Trigger_Disable_Selection>()
             .WithBurst()
             .ForEach((Entity regimentDeselect, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
             {
@@ -80,9 +80,9 @@ public class HighlightDisable : SystemBase
                     }
                 }
                 highlightsReg.Dispose();
-                ecbBsim.RemoveComponent<RegimentSelectedTag>(entityInQueryIndex, regimentDeselect);
+                ecbBsim.RemoveComponent<State_Selected>(entityInQueryIndex, regimentDeselect);
                 UnityEngine.Debug.Log("REMOVE OK");
-                ecbBsim.RemoveComponent<RegimentDeselect>(entityInQueryIndex, regimentDeselect);
+                ecbBsim.RemoveComponent<Trigger_Disable_Selection>(entityInQueryIndex, regimentDeselect);
             }).ScheduleParallel();
         ECB_bSim.AddJobHandleForProducer(Dependency);
     }

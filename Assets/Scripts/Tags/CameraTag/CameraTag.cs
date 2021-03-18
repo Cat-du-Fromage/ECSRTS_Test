@@ -3,7 +3,5 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-public struct RegimentUnassignedTag : IComponentData
-{
-
-}
+[GenerateAuthoringComponent]
+public struct CameraTag : IComponentData{}
