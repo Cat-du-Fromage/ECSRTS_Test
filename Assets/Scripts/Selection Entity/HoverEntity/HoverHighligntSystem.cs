@@ -24,7 +24,6 @@ public class HoverHighligntEnable : SystemBase
     /// </summary>
     protected override void OnCreate()
     {
-        base.OnCreate();
         RequireForUpdate(GetEntityQuery(typeof(Trigger_Enable_Hover)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
@@ -38,12 +37,10 @@ public class HoverHighligntEnable : SystemBase
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>
             {
-                NativeArray<RegimentPreSelectBuffer> RegimentHighlights = unitPreselect.ToNativeArray(Allocator.Temp);
-                for (int i = 0; i< RegimentHighlights.Length; i++)
+                for (int i = 0; i< unitPreselect.Length; i++)
                 {
-                    ecb.RemoveComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].UnitPreselect);
+                    ecb.RemoveComponent<Disabled>(entityInQueryIndex, unitPreselect[i].UnitPreselect);
                 }
-                RegimentHighlights.Dispose();
                 ecb.RemoveComponent<Trigger_Enable_Hover>(entityInQueryIndex, regiment);
             }).ScheduleParallel();
         ECB_bInit.AddJobHandleForProducer(Dependency);
@@ -63,7 +60,6 @@ public class HoverHighligntDisable : SystemBase
     /// </summary>
     protected override void OnCreate()
     {
-        base.OnCreate();
         RequireForUpdate(GetEntityQuery(typeof(Trigger_Disable_Hover)));
         ECB_bInit = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
     }
@@ -77,12 +73,10 @@ public class HoverHighligntDisable : SystemBase
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitPreselect) =>
             {
-                NativeArray<RegimentPreSelectBuffer> RegimentHighlights = unitPreselect.ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < RegimentHighlights.Length; i++)
+                for (int i = 0; i < unitPreselect.Length; i++)
                 {
-                    ecb.AddComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].UnitPreselect);
+                    ecb.AddComponent<Disabled>(entityInQueryIndex, unitPreselect[i].UnitPreselect);
                 }
-                RegimentHighlights.Dispose();
                 ecb.RemoveComponent<Trigger_Disable_Hover>(entityInQueryIndex, regiment);
                 ecb.RemoveComponent<State_Hovered>(entityInQueryIndex, regiment); //remove tag on 
             }).ScheduleParallel();

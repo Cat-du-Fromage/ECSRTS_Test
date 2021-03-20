@@ -71,19 +71,26 @@ public class CameraControl : MonoBehaviour
         if (Input.GetMouseButtonDown(2)) //check if the middle mouse button was pressed
         {
             startPosition = Input.mousePosition;
+            Debug.Log($"startPosition={startPosition}");
         }
 
         if (Input.GetMouseButton(2)) //check if the middle mouse button is being held down
         {
             EndPosition = Input.mousePosition;
-
+            //Debug.Log($"EndPosition={EndPosition}");
             float DistanceX = (EndPosition - startPosition).x * _rotationSpeed * Time.deltaTime;
             float DistanceY = (EndPosition - startPosition).y * _rotationSpeed * Time.deltaTime;
-
+            //Debug.Log($"DistanceX={DistanceX}");
+            //Debug.Log($"DistanceY={DistanceY}");
             transform.rotation *= Quaternion.Euler(new Vector3(0, DistanceX, 0));
+            Debug.Log($"transform.rotation. x = {(transform.rotation * Quaternion.Euler(new Vector3(0, DistanceX, 0))).x} // y = {(transform.rotation * Quaternion.Euler(new Vector3(0, DistanceX, 0))).y} // z = {(transform.rotation * Quaternion.Euler(new Vector3(0, DistanceX, 0))).z} // w = {(transform.rotation * Quaternion.Euler(new Vector3(0, DistanceX, 0))).w}");
+            //Debug.Log($"transform.rotation. w = {transform.rotation.w} // x = {transform.rotation.x} // y = {transform.rotation.y} // z = {transform.rotation.z}");
+            //Debug.Log($"EULER. x = {transform.rotation.eulerAngles.x} // y = {transform.rotation.eulerAngles.y} // z = {transform.rotation.eulerAngles.z}");
+            //Debug.Log($"transform.rotation={transform.rotation* Quaternion.Euler(new Vector3(0, DistanceX, 0))}");
 
-            transform.GetChild(0).transform.rotation *= Quaternion.Euler(new Vector3(-DistanceY, 0, 0));
-
+            //transform.GetChild(0).transform.rotation *= Quaternion.Euler(new Vector3(-DistanceY, 0, 0));
+            //Debug.Log($"Quaternion.Euler={Quaternion.Euler(new Vector3(-DistanceY, 0, 0))}");
+            //Debug.Log($"transform.GetChild={transform.GetChild(0).transform.rotation}"); //
             startPosition = EndPosition;
 
         }

@@ -61,6 +61,7 @@ public class RegimentsSystem : SystemBase
         a = new CompRegimentClass_Fusilier();
         */
         _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier {Size = 10 });//find a way to assign a number to a class Component
+
         if (unitType == UnitFusilier.PrussianFusilier)
         {
             _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
@@ -71,6 +72,10 @@ public class RegimentsSystem : SystemBase
             _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
             _entityManager.SetComponentData(RegimentFusilier, new UnitType_Prefab { UnitTypePrefab = spawnerPrefab.UnitBritishFusilier });
         }
+        //_entityManager.GetBuffer<RegimentHighlightsBuffer>(RegimentFusilier).ResizeUninitialized(GetComponent<CompRegimentClass_Fusilier>(RegimentFusilier).Size);
+        //_entityManager.GetBuffer<RegimentPreSelectBuffer>(RegimentFusilier).ResizeUninitialized(GetComponent<CompRegimentClass_Fusilier>(RegimentFusilier).Size);
+        _entityManager.GetBuffer<RegimentHighlightsBuffer>(RegimentFusilier).TrimExcess();
+        _entityManager.GetBuffer<RegimentPreSelectBuffer>(RegimentFusilier).TrimExcess();
     }
 }
 /// <summary>
@@ -94,14 +99,14 @@ public class RegimentBufferHighlights : SystemBase
             {
                 DynamicBuffer<RegimentHighlightsBuffer> HighlightsBuffer = GetBuffer<RegimentHighlightsBuffer>(regiment);
                 DynamicBuffer<RegimentPreSelectBuffer> PreselectBuffer = GetBuffer<RegimentPreSelectBuffer>(regiment);
-                NativeArray<Child> RegimentUnits = unit.ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < RegimentUnits.Length; i++)
+                //NativeArray<Child> RegimentUnits = unit.ToNativeArray(Allocator.Temp);
+                for (int i = 0; i < unit.Length; i++)
                 {
-                    DynamicBuffer<LinkedEntityGroup> unitLinkedGroup = GetBuffer<LinkedEntityGroup>(RegimentUnits[i].Value);
+                    DynamicBuffer<LinkedEntityGroup> unitLinkedGroup = GetBuffer<LinkedEntityGroup>(unit[i].Value);
                     HighlightsBuffer.Add(new RegimentHighlightsBuffer { RegimentUnitsHighlights = unitLinkedGroup[1].Value });
                     PreselectBuffer.Add(new RegimentPreSelectBuffer { UnitPreselect = unitLinkedGroup[2].Value });
                 }
-                RegimentUnits.Dispose();
+                //RegimentUnits.Dispose();
                 ecb.AddComponent<RegimentInitPreselectTAG>(entityInQueryIndex, regiment);
                 ecb.RemoveComponent<RegimentInitHighlightsTAG>(entityInQueryIndex, regiment);
             }).Schedule();
@@ -130,12 +135,12 @@ public class RegimentBufferHighlightsInit : SystemBase
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> unitHighlights) =>
             {
-                NativeArray<RegimentHighlightsBuffer> RegimentHighlights = unitHighlights.ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < RegimentHighlights.Length; i++)
+                //NativeArray<RegimentHighlightsBuffer> RegimentHighlights = unitHighlights.ToNativeArray(Allocator.Temp);
+                for (int i = 0; i < unitHighlights.Length; i++)
                 {
-                    ecb.AddComponent<Disabled>(entityInQueryIndex, RegimentHighlights[i].RegimentUnitsHighlights);
+                    ecb.AddComponent<Disabled>(entityInQueryIndex, unitHighlights[i].RegimentUnitsHighlights);
                 }
-                RegimentHighlights.Dispose();
+                //RegimentHighlights.Dispose();
             }).ScheduleParallel();
         Begin_Sim.AddJobHandleForProducer(Dependency);
         //////////////////////////////////
@@ -146,12 +151,12 @@ public class RegimentBufferHighlightsInit : SystemBase
             .WithBurst()
             .ForEach((Entity regiment, int entityInQueryIndex, in DynamicBuffer<RegimentPreSelectBuffer> unitHighlights) =>
             {
-                NativeArray<RegimentPreSelectBuffer> RegimentPreselects = unitHighlights.ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < RegimentPreselects.Length; i++)
+                //NativeArray<RegimentPreSelectBuffer> RegimentPreselects = unitHighlights.ToNativeArray(Allocator.Temp);
+                for (int i = 0; i < unitHighlights.Length; i++)
                 {
-                    ecb.AddComponent<Disabled>(entityInQueryIndex, RegimentPreselects[i].UnitPreselect);
+                    ecb.AddComponent<Disabled>(entityInQueryIndex, unitHighlights[i].UnitPreselect);
                 }
-                RegimentPreselects.Dispose();
+                //RegimentPreselects.Dispose();
                 ecb.RemoveComponent<RegimentInitPreselectTAG>(entityInQueryIndex, regiment);
             }).ScheduleParallel();
         Begin_Sim.AddJobHandleForProducer(Dependency);

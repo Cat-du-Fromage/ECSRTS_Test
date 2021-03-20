@@ -58,11 +58,11 @@ public class HoverSystem : SystemBase
     {
         _dragSelection = 0;
         _eventHolderSelect = GetSingletonEntity<HoverEventHolderTag>();
-        //ray = Camera.main.ScreenPointToRay(_startMousePos);
+        ray = Camera.main.ScreenPointToRay(_startMousePos);
     }
 
     protected override void OnUpdate()
-    {/*
+    {
         // On hover Unit add Hover on unit
         if(_dragSelection == 0) //
         {
@@ -95,7 +95,7 @@ public class HoverSystem : SystemBase
                 _previousRegimentHit = _regimentUnitHit;
             }
         }
-        */
+        
         #region Left Click Down
         //On Hover with a selection box
         if (Input.GetMouseButtonDown(0))
@@ -167,7 +167,7 @@ public class HoverSystem : SystemBase
             #endregion BOX SELECTION
             //
             //Check only when Box selection actually exist
-            /*
+            
             if(_dragSelection == 1)
             {
                 _lowerLeftPosition = new float3(math.min(_startPositionFIX.x, _endPositionFIX.x), math.min(_startPositionFIX.y, _endPositionFIX.y), 0);
@@ -183,19 +183,19 @@ public class HoverSystem : SystemBase
                     .WithoutBurst()
                     .ForEach((Entity regiment, in DynamicBuffer<Child> units) =>
                     {
-                        NativeArray<Entity> unitsRegiment = units.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
-                        for(int i = 0; i< unitsRegiment.Length; i++)
+                        //NativeArray<Entity> unitsRegiment = units.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
+                        for(int i = 0; i< units.Length; i++)
                         {
-                            float3 unitPosition = GetComponent<Translation>(unitsRegiment[i]).Value;
+                            float3 unitPosition = GetComponent<Translation>(units[i].Value).Value;
                             float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
                             if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
                             {
-                                _entityManager.AddComponent<State_Hovered>(regiment); // Add SelectionComponent : ATTENTION: NEED ".WithStructuralChanges()" to work
-                                _entityManager.AddComponent<EnterHoverTag>(regiment);
+                                _entityManager.AddComponent<State_Hovered>(regiment);
+                                _entityManager.AddComponent<Trigger_Enable_Hover>(regiment);
                                 break;
                             }
                         }
-                        unitsRegiment.Dispose();
+                        //unitsRegiment.Dispose();
                     }).Run();
                 //=========================================================================
                 //Remove Pre Selection from Regiment who have no units in the box selection
@@ -224,7 +224,7 @@ public class HoverSystem : SystemBase
                         AllUnits.Dispose();
                     }).Run();
             }
-            */
+            
         }
         #endregion Left Click MAINTAIN
 

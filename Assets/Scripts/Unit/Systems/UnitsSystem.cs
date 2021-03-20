@@ -35,8 +35,8 @@ public class UnitsSystem : SystemBase
                 .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
                 {
                     //allocate memory
-                    NativeArray<Entity> RegimentUnits = new NativeArray<Entity>(RegimentSize.Size, Allocator.Temp);
-                    for (int i = 0; i < RegimentUnits.Length; i++)
+                    //NativeArray<Entity> RegimentUnits = new NativeArray<Entity>(RegimentSize.Size, Allocator.Temp);
+                    for (int i = 0; i < RegimentSize.Size; i++)
                     {
                         Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
                         BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
@@ -44,7 +44,7 @@ public class UnitsSystem : SystemBase
                         BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
                         BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
                     } //GetBuffer<Child>(Unit)[0]
-                    RegimentUnits.Dispose();
+                    //RegimentUnits.Dispose();
                     BeginInitecb.AddComponent<RegimentInitHighlightsTAG>(entityInQueryIndex, Regiment);
                     BeginInitecb.RemoveComponent<State_Unassigned>(entityInQueryIndex, Regiment);
                 }).ScheduleParallel(); // Execute in parallel for each chunk of entities

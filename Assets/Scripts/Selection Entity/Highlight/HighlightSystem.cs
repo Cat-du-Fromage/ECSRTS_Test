@@ -30,15 +30,15 @@ public class EnableHighlight : SystemBase
             .WithBurst()
             .ForEach((Entity RegimentSelected, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
             {
-                NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < highlightsReg.Length; i++)
+                //NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
+                for (int i = 0; i < highlights.Length; i++)
                 {
-                    if (HasComponent<Disabled>(highlightsReg[i]))
+                    if (HasComponent<Disabled>(highlights[i].RegimentUnitsHighlights))
                     {
-                        ecbBsim.RemoveComponent<Disabled>(entityInQueryIndex, highlightsReg[i]);
+                        ecbBsim.RemoveComponent<Disabled>(entityInQueryIndex, highlights[i].RegimentUnitsHighlights);
                     }
                 }
-                highlightsReg.Dispose();
+                //highlightsReg.Dispose();
                 ecbBsim.AddComponent<State_Selected>(entityInQueryIndex, RegimentSelected);
                 ecbBsim.RemoveComponent<Trigger_Enable_Selection>(entityInQueryIndex, RegimentSelected);
             }).ScheduleParallel();
@@ -71,15 +71,15 @@ public class HighlightDisable : SystemBase
             .WithBurst()
             .ForEach((Entity regimentDeselect, int entityInQueryIndex, in DynamicBuffer<RegimentHighlightsBuffer> highlights) =>
             {
-                NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
-                for (int i = 0; i < highlightsReg.Length; i++)
+                //NativeArray<Entity> highlightsReg = highlights.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
+                for (int i = 0; i < highlights.Length; i++)
                 {
-                    if (!HasComponent<Disabled>(highlightsReg[i]))
+                    if (!HasComponent<Disabled>(highlights[i].RegimentUnitsHighlights))
                     {
-                        ecbBsim.AddComponent<Disabled>(entityInQueryIndex, highlightsReg[i]);
+                        ecbBsim.AddComponent<Disabled>(entityInQueryIndex, highlights[i].RegimentUnitsHighlights);
                     }
                 }
-                highlightsReg.Dispose();
+                //highlightsReg.Dispose();
                 ecbBsim.RemoveComponent<State_Selected>(entityInQueryIndex, regimentDeselect);
                 UnityEngine.Debug.Log("REMOVE OK");
                 ecbBsim.RemoveComponent<Trigger_Disable_Selection>(entityInQueryIndex, regimentDeselect);
