@@ -158,7 +158,7 @@ public class HoverSystem : SystemBase
             _endPositionFIX = Input.mousePosition;
             #region BOX SELECTION
             _dragSelection = math.length(_startPositionFIX - (float3)Input.mousePosition) > _selectionBoxMinSize ? 1 : 0; // box selection?
-
+            Debug.Log(math.length(_startPositionFIX - (float3)Input.mousePosition));
             _widthBoxSelect = Input.mousePosition.x - _startPositionFIX.x;
             _heightBoxSelect = Input.mousePosition.y - _startPositionFIX.y;
 
@@ -180,7 +180,7 @@ public class HoverSystem : SystemBase
                     .WithAll<RegimentTag>()
                     .WithNone<State_Hovered>()
                     .WithStructuralChanges()
-                    .WithoutBurst()
+                    .WithBurst()
                     .ForEach((Entity regiment, in DynamicBuffer<Child> units) =>
                     {
                         //NativeArray<Entity> unitsRegiment = units.Reinterpret<Entity>().ToNativeArray(Allocator.Temp);
@@ -203,7 +203,8 @@ public class HoverSystem : SystemBase
                 //=========================================================================
                 Entities
                     .WithAll<State_Hovered, RegimentTag>()
-                    .WithoutBurst()
+                    //.WithoutBurst()
+                    .WithBurst()
                     .WithStructuralChanges()
                     .ForEach((Entity Regiment, in DynamicBuffer<Child> unit) =>
                     {
@@ -212,6 +213,7 @@ public class HoverSystem : SystemBase
                         {
                             float3 unitPosition = GetComponent<Translation>(AllUnits[i]).Value;
                             float3 screenPos = Camera.main.WorldToScreenPoint(unitPosition);
+                            //float3 screenPos = CameraUtils.CameraToScreen.manualScreenPointToWorld(Camera.main, unitPosition);
                             if ((screenPos.x >= _lowerLeftPosition.x) && (screenPos.y >= _lowerLeftPosition.y) && (screenPos.x <= _upperRightPosition.x) && (screenPos.y <= _upperRightPosition.y))
                             {
                                 break;

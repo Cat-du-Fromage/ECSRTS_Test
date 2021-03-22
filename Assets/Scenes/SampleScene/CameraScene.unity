@@ -231,13 +231,14 @@ GameObject:
   - component: {fileID: 1820273400}
   - component: {fileID: 1820273399}
   - component: {fileID: 1820273401}
+  - component: {fileID: 1820273402}
   m_Layer: 0
   m_Name: CameraHolderSub
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1820273399
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,3 +279,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ConversionMode: 0
+--- !u!114 &1820273402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1820273398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 201892dac31422447b693f0df56f8149, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

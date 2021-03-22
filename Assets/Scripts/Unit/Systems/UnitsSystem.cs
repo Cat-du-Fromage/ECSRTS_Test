@@ -11,8 +11,10 @@ using Unity.Physics;
 //only allow the update after regiments are created
 public class UnitsSystem : SystemBase
 {
-    private EntityManager _entityManager;
-    private EntityQuery _unassignedRegiment;
+    EntityManager _entityManager;
+    EntityQuery _unassignedRegiment;
+    Entity _singeltonInitStartPos;
+    float3 _startInitPos;
     BeginInitializationEntityCommandBufferSystem BeginInit_ECB;
 
     protected override void OnCreate()
@@ -20,6 +22,12 @@ public class UnitsSystem : SystemBase
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         this._unassignedRegiment = GetEntityQuery(typeof(State_Unassigned));
         BeginInit_ECB = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+    }
+
+    protected override void OnStartRunning()
+    {
+        _singeltonInitStartPos = GetSingletonEntity<Data_StartingPlacement>();
+        _startInitPos = _entityManager.GetComponentData<Data_StartingPlacement>(_singeltonInitStartPos).StartInitPlacement;
     }
 
     protected override void OnUpdate()
@@ -32,7 +40,7 @@ public class UnitsSystem : SystemBase
                 .WithName("UNITSPAWN")
                 .WithBurst()
                 .WithAll<State_Unassigned, CompRegimentClass_Fusilier>()
-                .ForEach((Entity Regiment, int entityInQueryIndex, in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
+                .ForEach((Entity Regiment, int entityInQueryIndex, in Data_StartingPlacement data_StartingPlacement ,in CompRegimentClass_Fusilier RegimentSize, in UnitType_Prefab prefab) =>
                 {
                     //allocate memory
                     //NativeArray<Entity> RegimentUnits = new NativeArray<Entity>(RegimentSize.Size, Allocator.Temp);
@@ -40,7 +48,7 @@ public class UnitsSystem : SystemBase
                     {
                         Entity Unit = BeginInitecb.Instantiate(entityInQueryIndex, prefab.UnitTypePrefab);
                         BeginInitecb.AddComponent<UnitTag>(entityInQueryIndex, Unit);
-                        BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(8+i, 5, 5) });
+                        BeginInitecb.SetComponent(entityInQueryIndex, Unit, new Translation { Value = new float3(data_StartingPlacement .StartInitPlacement.x+ i, data_StartingPlacement.StartInitPlacement.y+2, data_StartingPlacement.StartInitPlacement.z) });
                         BeginInitecb.AddComponent(entityInQueryIndex, Unit, new Parent { Value = Regiment });
                         BeginInitecb.AddComponent(entityInQueryIndex, Unit, new LocalToParent());
                     } //GetBuffer<Child>(Unit)[0]

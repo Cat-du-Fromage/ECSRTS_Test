@@ -69,9 +69,10 @@ namespace CameraUtils
 
             return transformedPoint;
         }
-
-        Vector3 manualScreenPointToWorld(Camera cam, Vector3 sp)
+        
+        public static float3 manualScreenPointToWorld(Camera cam, float3 sp)
         {
+
             Matrix4x4 world2Screen = cam.projectionMatrix * cam.worldToCameraMatrix;
             Matrix4x4 screen2World = world2Screen.inverse;
 
@@ -82,7 +83,7 @@ namespace CameraUtils
             inn[2] = cam.nearClipPlane;
             inn[3] = 1.0f;
 
-            Vector4 pos = screen2World * new Vector4(inn[0], inn[1], inn[2], inn[3]);
+            float4 pos = screen2World * new float4(inn[0], inn[1], inn[2], inn[3]);
 
             pos.w = 1.0f / pos.w;
 
@@ -90,8 +91,9 @@ namespace CameraUtils
             pos.y *= pos.w;
             pos.z *= pos.w;
 
-            return new Vector3(pos.x, pos.y, pos.z);
+            return new float3(pos.x, pos.y, pos.z);
         }
+        
     }
 
 }
