@@ -29,7 +29,7 @@ public class RegimentsSystem : SystemBase
     protected override void OnCreate()
     {
         _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        _regimentFusilierArchetype = _entityManager.CreateArchetype(typeof(RegimentTag), typeof(Data_StartingPlacement),typeof(State_Unassigned),typeof(LocalToWorld),typeof(RegimentHighlightsBuffer),typeof(RegimentPreSelectBuffer),typeof(Translation),typeof(RenderBounds), typeof(CompRegimentClass_Fusilier)); // set the archetype of a new Regiment
+        _regimentFusilierArchetype = _entityManager.CreateArchetype(typeof(RegimentTag), typeof(Data_StartingPlacement), typeof(Data_Unit_PositionOffset),typeof(State_Unassigned),typeof(LocalToWorld),typeof(RegimentHighlightsBuffer),typeof(RegimentPreSelectBuffer),typeof(Translation),typeof(RenderBounds), typeof(CompRegimentClass_Fusilier)); // set the archetype of a new Regiment
     }
 
     protected override void OnUpdate()
@@ -60,7 +60,8 @@ public class RegimentsSystem : SystemBase
         a.Size = 10;
         a = new CompRegimentClass_Fusilier();
         */
-        _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier {Size = 10 });//find a way to assign a number to a class Component
+        _entityManager.SetComponentData(RegimentFusilier, new CompRegimentClass_Fusilier {Size = 30 });//find a way to assign a number to a class Component
+        _entityManager.SetComponentData(RegimentFusilier, new Data_Unit_PositionOffset {PosOffset = 0.1f });//find a way to assign a number to a class Component
         _entityManager.SetComponentData(RegimentFusilier, new Data_StartingPlacement { StartInitPlacement = _entityManager.GetComponentData<Data_StartingPlacement>(GetSingletonEntity<Tag_StartPlacementSpawn>()).StartInitPlacement });//find a way to assign a number to a class Component
         if (unitType == UnitFusilier.PrussianFusilier)
         {
@@ -72,8 +73,6 @@ public class RegimentsSystem : SystemBase
             _entityManager.AddComponent<UnitType_Prefab>(RegimentFusilier);
             _entityManager.SetComponentData(RegimentFusilier, new UnitType_Prefab { UnitTypePrefab = spawnerPrefab.UnitBritishFusilier });
         }
-        //_entityManager.GetBuffer<RegimentHighlightsBuffer>(RegimentFusilier).ResizeUninitialized(GetComponent<CompRegimentClass_Fusilier>(RegimentFusilier).Size);
-        //_entityManager.GetBuffer<RegimentPreSelectBuffer>(RegimentFusilier).ResizeUninitialized(GetComponent<CompRegimentClass_Fusilier>(RegimentFusilier).Size);
         _entityManager.GetBuffer<RegimentHighlightsBuffer>(RegimentFusilier).TrimExcess();
         _entityManager.GetBuffer<RegimentPreSelectBuffer>(RegimentFusilier).TrimExcess();
     }

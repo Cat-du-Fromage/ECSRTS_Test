@@ -5,57 +5,56 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-
+[BurstCompile]
+/// <summary>
+/// Input Manager for placement
+/// </summary>
 public class SelectionPlacementSystem : SystemBase
 {
-    int _dragPlacement;
-    float3 _startPlacement;
-    float3 _endPlacement;
-
-    int _minFormationSize;
-    int _maxFormationSize;
-
-    int _offsetPlacementSize;
-
+    EntityManager _entityManager;
     protected override void OnCreate()
     {
         RequireForUpdate(GetEntityQuery(typeof(State_Selected)));
-    }
-
-    protected override void OnStartRunning()
-    {
-        _dragPlacement = 0;
-        _minFormationSize = 5;
-        _maxFormationSize = 0;
+        _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
     }
 
     protected override void OnUpdate()
     {
-        if(Input.GetMouseButtonDown(1))
+        Entities
+        .WithAll<Tag_UnitPlacement>()
+        .WithNone<Trigger_Placement_Regiment>()
+        .WithBurst()
+        .ForEach((Entity placHolder, ref Data_Placement_StartPosition startPosition, ref Data_Placement_EndPosition endPosition, ref Data_Placement_Length length, ref Data_Placement_LastLength lastLength) => 
         {
-            _startPlacement = Input.mousePosition;
-        }
-        
-        if(Input.GetMouseButton(1))
+            if(Input.GetMouseButtonDown(1))
+            {
+                startPosition.value = Input.mousePosition;
+            }
+            
+            if(Input.GetMouseButton(1))
+            {
+                endPosition.value = Input.mousePosition;
+                length.value = math.length(endPosition.value - startPosition.value);
+            }
+            /*
+            if(length.value != lastLength.value)
+            {
+                _entityManager.AddComponent<Trigger_Placement_Regiment>(placHolder);
+                test.Enabled = true;
+                lastLength.value = length.value;
+            }
+            */
+
+        }).Run();
+
+        var PlaHolder = GetSingletonEntity<Tag_UnitPlacement>();
+        var length = _entityManager.GetComponentData<Data_Placement_Length>(PlaHolder).value;
+        var lastLength = _entityManager.GetComponentData<Data_Placement_LastLength>(PlaHolder).value;
+
+        if(length != lastLength)
         {
-            _endPlacement = Input.mousePosition;
-            _dragPlacement = math.length(_endPlacement - _startPlacement) >= _minFormationSize ? 1 : 0;
+            _entityManager.AddComponent<Trigger_Placement_Regiment>(PlaHolder);
+            _entityManager.SetComponentData(PlaHolder, new Data_Placement_LastLength{value = length});
         }
-
-        if (Input.GetMouseButtonUp(1))
-        {
-
-        }
-
-        Entities.ForEach((ref Translation translation, in Rotation rotation) => {
-            // Implement the work to perform for each entity here.
-            // You should only access data that is local or that is a
-            // field on this job. Note that the 'rotation' parameter is
-            // marked as 'in', which means it cannot be modified,
-            // but allows this job to run in parallel with other jobs
-            // that want to read Rotation component data.
-            // For example,
-            //     translation.Value += math.mul(rotation.Value, new float3(0, 0, 1)) * deltaTime;
-        }).Schedule();
     }
 }

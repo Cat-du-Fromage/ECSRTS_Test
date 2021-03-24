@@ -3,5 +3,5 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-[GenerateAuthoringComponent]
-public struct Tag_UnitPlacement : IComponentData{}
+[Serializable]
+public struct Trigger_Placement_Regiment : IComponentData{}
